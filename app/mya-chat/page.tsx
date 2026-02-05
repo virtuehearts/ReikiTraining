@@ -1,0 +1,35 @@
+"use client";
+
+import ChatInterface from "@/components/ChatInterface";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
+export default function MyaChatPage() {
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="p-6 border-b border-primary/10 bg-background-alt/50 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-2 text-foreground-muted hover:text-accent transition-colors">
+          <ChevronLeft size={20} />
+          <span>Back to Dashboard</span>
+        </Link>
+        <h1 className="text-2xl font-serif text-accent">Mya – Reiki Assistant</h1>
+        <div className="w-24" /> {/* Spacer */}
+      </header>
+
+      <main className="flex-grow flex flex-col items-center justify-center p-6 md:p-12 space-y-8">
+        <div className="text-center max-w-2xl">
+          <h2 className="text-3xl font-serif mb-4">A Sacred Dialogue</h2>
+          <p className="text-foreground-muted italic">
+            "Mya is here to guide you through the energies of the day. Seek her wisdom when your path feels unclear."
+          </p>
+        </div>
+
+        <ChatInterface />
+      </main>
+
+      <footer className="p-8 text-center text-foreground-muted/40 text-sm">
+        Blessings of peace, Baba Virtuehearts | 647-781-8371
+      </footer>
+    </div>
+  );
+}
