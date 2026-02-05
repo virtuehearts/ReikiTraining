@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?
+  image         String?
+  role          String    @default("USER") // USER, ADMIN
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  intake        Intake?
+  progress      Progress[]
+  reflections   Reflection[]
+}
+
+model Intake {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age            Int?
+  location       String?
+  experience     String?  // None, Beginner, Intermediate, Advanced
+  goal           String?
+  healthConcerns String?
+  createdAt      DateTime @default(now())
+}
+
+model Progress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       Int      // 1-7
+  completed Boolean  @default(false)
+  completedAt DateTime?
+
+  @@unique([userId, day])
+}
+
+model Reflection {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       Int
+  content   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, day])
+}

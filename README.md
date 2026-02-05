@@ -1,2 +1,0 @@
-# ReikiTraining
-Virtuehearts Reiki Training
