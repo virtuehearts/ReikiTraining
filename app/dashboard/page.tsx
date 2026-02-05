@@ -89,7 +89,7 @@ export default function DashboardPage() {
         <div className="text-center space-y-4">
           <h2 className="text-4xl md:text-5xl font-serif text-foreground">Your 7-Day Transformation</h2>
           <p className="text-foreground-muted max-w-2xl mx-auto italic">
-            "Each day is a new virtue, a new energy, a new step towards your highest self."
+            &quot;Each day is a new virtue, a new energy, a new step towards your highest self.&quot;
           </p>
         </div>
 

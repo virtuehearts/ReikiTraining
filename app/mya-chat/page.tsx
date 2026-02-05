@@ -20,7 +20,7 @@ export default function MyaChatPage() {
         <div className="text-center max-w-2xl">
           <h2 className="text-3xl font-serif mb-4">A Sacred Dialogue</h2>
           <p className="text-foreground-muted italic">
-            "Mya is here to guide you through the energies of the day. Seek her wisdom when your path feels unclear."
+            &quot;Mya is here to guide you through the energies of the day. Seek her wisdom when your path feels unclear.&quot;
           </p>
         </div>
 

@@ -46,7 +46,7 @@ export default function IntakeForm({ onComplete, initialData }: IntakeFormProps)
     <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-2xl max-w-2xl mx-auto">
       <h2 className="text-3xl font-serif text-accent mb-6 text-center">Your Sacred Intake</h2>
       <p className="text-foreground-muted mb-8 text-center italic">
-        "To better guide your journey, please share a glimpse of your path."
+        &quot;To better guide your journey, please share a glimpse of your path.&quot;
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">

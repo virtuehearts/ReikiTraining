@@ -7,7 +7,7 @@ const teachings = [
   {
     title: "Gassho Meditation",
     icon: <Zap className="text-accent" />,
-    description: "The foundation of Reiki practice. Gassho means 'two hands coming together'. It is used to clear the mind and center the spirit.",
+    description: "The foundation of Reiki practice. Gassho means &quot;two hands coming together&quot;. It is used to clear the mind and center the spirit.",
     steps: [
       "Sit comfortably with your back straight.",
       "Place your hands together in front of your heart center (Atmanjali Mudra).",
@@ -66,7 +66,7 @@ export default function TeachingsPage() {
         <div className="text-center space-y-4">
           <h2 className="text-4xl md:text-5xl font-serif text-foreground">Wisdom of the Masters</h2>
           <p className="text-foreground-muted max-w-2xl mx-auto italic">
-            "The path of Reiki is paved with ancient techniques and modern devotion. Explore these guides to deepen your daily practice."
+            &quot;The path of Reiki is paved with ancient techniques and modern devotion. Explore these guides to deepen your daily practice.&quot;
           </p>
         </div>
 
@@ -97,7 +97,7 @@ export default function TeachingsPage() {
         <div className="bg-primary/5 border border-accent/20 rounded-3xl p-10 text-center space-y-6">
           <h3 className="text-3xl font-serif text-accent">Deeper Mastery Awaits</h3>
           <p className="text-foreground-muted max-w-xl mx-auto">
-            These techniques are just the beginning. Imagine the profound transformation you'll experience during a direct transmission.
+            These techniques are just the beginning. Imagine the profound transformation you&apos;ll experience during a direct transmission.
           </p>
           <div className="pt-4">
             <Link

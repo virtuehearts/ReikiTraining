@@ -11,7 +11,7 @@ export default function LandingPage() {
               <span className="text-foreground">Reiki Training</span>
             </h1>
             <p className="text-xl md:text-2xl text-foreground-muted font-light italic">
-              "Awakening Inner Peace Through Virtue & Reiki Energy"
+              &quot;Awakening Inner Peace Through Virtue & Reiki Energy&quot;
             </p>
           </div>
 
