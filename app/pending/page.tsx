@@ -29,7 +29,7 @@ export default function PendingPage() {
           <div className="space-y-6 text-lg text-foreground-muted max-w-lg mx-auto leading-relaxed">
             <p>Your account is under review.</p>
             <p>Approval takes up to 24 hours.</p>
-            <p>You'll receive an email when activated.</p>
+            <p>You&apos;ll receive an email when activated.</p>
             <p>We look forward to your sacred journey.</p>
           </div>
         </div>
