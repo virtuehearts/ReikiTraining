@@ -42,7 +42,7 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 
 - **Framework:** [Next.js 15 (App Router)](https://nextjs.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Database:** [Prisma](https://www.prisma.io/) with **SQLite**
+- **Database:** [Drizzle ORM](https://orm.drizzle.team/) with [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
 - **Authentication:** [NextAuth.js](https://next-auth.js.org/)
 - **AI Integration:** [OpenRouter API](https://openrouter.ai/) (meta-llama/llama-3.1-8b-instruct:free)
 
@@ -82,7 +82,7 @@ OPENROUTER_API_KEY="your-openrouter-api-key"
 2. **Database Preparation:**
    Ensure you have run the initial migration/push to your local SQLite database:
    ```bash
-   npx prisma db push
+   npm run db:push
    ```
 
 ### Running the Application

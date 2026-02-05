@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "node scripts/init.js && next start",
     "lint": "next lint",
+    "test": "node scripts/verify-db.js",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "framer-motion": "^12.0.6",
     "lucide-react": "^0.474.0",
