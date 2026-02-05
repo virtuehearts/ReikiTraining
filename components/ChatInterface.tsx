@@ -9,9 +9,7 @@ interface Message {
 }
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Greetings, seeker. I am Mya. How may I assist your spirit today?" }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -20,7 +18,27 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
   useEffect(scrollToBottom, [messages]);
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch("/api/chat");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length > 0) {
+          setMessages(data);
+        } else {
+          setMessages([{ role: "assistant", content: "Greetings, seeker. I am Mya. How may I assist your spirit today?" }]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch messages");
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;

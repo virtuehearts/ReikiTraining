@@ -20,6 +20,39 @@ model User {
   intake        Intake?
   progress      Progress[]
   reflections   Reflection[]
+  chatMessages     ChatMessage[]
+  sentMessages     Message[]      @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+}
+
+model AISettings {
+  id            String   @id @default("default")
+  systemPrompt  String
+  model         String   @default("meta-llama/llama-3.1-8b-instruct:free")
+  temperature   Float    @default(0.7)
+  topP          Float    @default(1.0)
+  updatedAt     DateTime @updatedAt
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // user, assistant
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content     String
+  isRead      Boolean  @default(false)
+  isBooking   Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }
 
 model Intake {
