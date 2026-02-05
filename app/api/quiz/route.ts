@@ -1,8 +1,10 @@
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { users } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { eq } from "drizzle-orm";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = "meta-llama/llama-3.1-8b-instruct:free";
@@ -17,9 +19,9 @@ export async function POST(req: Request) {
 
     const { virtue, day } = await req.json();
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { intake: true },
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      with: { intake: true },
     });
 
     const prompt = `Generate 4 multiple choice questions on the virtue of [${virtue}] in the context of Reiki.

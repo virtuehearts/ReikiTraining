@@ -1,8 +1,10 @@
 import { chatWithMya } from "@/lib/openrouter";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { chatMessages, users } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { asc, eq } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
@@ -12,9 +14,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const messages = await prisma.chatMessage.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'asc' },
+    const messages = await db.query.chatMessages.findMany({
+      where: eq(chatMessages.userId, session.user.id),
+      orderBy: [asc(chatMessages.createdAt)],
     });
 
     return NextResponse.json(messages);
@@ -34,13 +36,13 @@ export async function POST(req: Request) {
 
     const { messages: currentMessages } = await req.json();
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      with: {
         intake: true,
         chatMessages: {
-          orderBy: { createdAt: 'asc' },
-          take: 50 // Limit history for context
+          orderBy: [asc(chatMessages.createdAt)],
+          limit: 50 // Limit history for context
         }
       },
     });
@@ -55,23 +57,19 @@ export async function POST(req: Request) {
     const lastUserMessage = currentMessages[currentMessages.length - 1];
 
     // Save user message to DB
-    await prisma.chatMessage.create({
-      data: {
-        userId: session.user.id,
-        role: "user",
-        content: lastUserMessage.content
-      }
+    await db.insert(chatMessages).values({
+      userId: session.user.id,
+      role: "user",
+      content: lastUserMessage.content
     });
 
     const reply = await chatWithMya([...history, lastUserMessage], user?.intake);
 
     // Save assistant reply to DB
-    await prisma.chatMessage.create({
-      data: {
-        userId: session.user.id,
-        role: "assistant",
-        content: reply.content
-      }
+    await db.insert(chatMessages).values({
+      userId: session.user.id,
+      role: "assistant",
+      content: reply.content
     });
 
     return NextResponse.json(reply);

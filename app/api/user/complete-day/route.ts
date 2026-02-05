@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { progress, reflections } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
@@ -17,44 +18,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing day" }, { status: 400 });
     }
 
+    const dayInt = parseInt(day);
+
     // Upsert progress
-    await prisma.progress.upsert({
-      where: {
-        userId_day: {
-          userId: session.user.id,
-          day: parseInt(day),
-        },
-      },
-      update: {
-        completed: true,
-        completedAt: new Date(),
-      },
-      create: {
+    await db.insert(progress)
+      .values({
         userId: session.user.id,
-        day: parseInt(day),
+        day: dayInt,
         completed: true,
         completedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [progress.userId, progress.day],
+        set: {
+          completed: true,
+          completedAt: new Date(),
+        },
+      });
 
     // Save reflection if provided
     if (reflection) {
-      await prisma.reflection.upsert({
-        where: {
-          userId_day: {
-            userId: session.user.id,
-            day: parseInt(day),
-          },
-        },
-        update: {
-          content: reflection,
-        },
-        create: {
+      await db.insert(reflections)
+        .values({
           userId: session.user.id,
-          day: parseInt(day),
+          day: dayInt,
           content: reflection,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: [reflections.userId, reflections.day],
+          set: {
+            content: reflection,
+          },
+        });
     }
 
     return NextResponse.json({ success: true });
