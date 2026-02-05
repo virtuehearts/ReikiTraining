@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { sendApprovalEmail } from "@/lib/email";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
@@ -22,15 +21,6 @@ export async function POST(req: Request) {
       where: { id: userId },
       data: { status },
     });
-
-    if (status === "APPROVED") {
-      try {
-        await sendApprovalEmail(user.email, user.name || "Seeker");
-      } catch (emailError) {
-        console.error("Email sending failed:", emailError);
-        // We still updated the status, so maybe just log it
-      }
-    }
 
     return NextResponse.json({ success: true, user });
   } catch (error) {

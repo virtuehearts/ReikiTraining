@@ -21,9 +21,44 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        const user = await prisma.user.findUnique({
+        const isAdmin = credentials.email === process.env.ADMIN_EMAIL;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        let user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
+
+        // Handle Admin special case from .env
+        if (isAdmin && adminPassword) {
+          if (credentials.password === adminPassword) {
+            if (!user) {
+              user = await prisma.user.create({
+                data: {
+                  email: credentials.email,
+                  password: await bcrypt.hash(adminPassword, 10),
+                  role: "ADMIN",
+                  status: "APPROVED",
+                },
+              });
+            } else {
+              // Ensure admin has correct password, role and status
+              const isCorrectInDb = user.password ? await bcrypt.compare(adminPassword, user.password) : false;
+              if (!isCorrectInDb || user.role !== "ADMIN" || user.status !== "APPROVED") {
+                user = await prisma.user.update({
+                  where: { id: user.id },
+                  data: {
+                    password: await bcrypt.hash(adminPassword, 10),
+                    role: "ADMIN",
+                    status: "APPROVED",
+                  },
+                });
+              }
+            }
+            return user;
+          } else if (isAdmin) {
+            throw new Error("Invalid admin password");
+          }
+        }
 
         if (!user || !user.password) {
           throw new Error("User not found");
@@ -47,13 +82,14 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!existingUser) {
+          const isAdmin = user.email === process.env.ADMIN_EMAIL;
           await prisma.user.create({
             data: {
               email: user.email!,
               name: user.name,
               image: user.image,
-              status: "PENDING",
-              role: user.email === process.env.ADMIN_EMAIL ? "ADMIN" : "USER",
+              status: isAdmin ? "APPROVED" : "PENDING",
+              role: isAdmin ? "ADMIN" : "USER",
             },
           });
         }

@@ -30,10 +30,13 @@ A collection of additional meditation techniques, symbols, and wisdom to support
 
 ### 🤖 Mya - The Reiki Assistant
 An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides:
-- Compassionate guidance on relaxation and virtues.
-- Explanations of Reiki symbols and energy flow.
-- Direct encouragement for booking private sessions with Baba Virtuehearts.
-- Subtle integration of Virtueism ideals.
+- **Sacred Memory:** Mya remembers your past interactions, providing a continuous spiritual journey.
+- **Dynamic Wisdom:** The administrator can adjust Mya's system prompts, model, and parameters (temperature, top_p) directly from the Admin Sanctuary.
+- **Compassionate Guidance:** Insights on relaxation, virtues, and Reiki symbols.
+
+### ✉️ Direct Messaging
+- **Message Baba Virtuehearts:** Direct line of communication between seekers and Baba Virtuehearts for guidance and booking requests.
+- **Admin Responses:** Baba can respond to messages and manage bookings directly within the application.
 
 ## 🛠️ Tech Stack
 
@@ -42,7 +45,6 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 - **Database:** [Prisma](https://www.prisma.io/) with **SQLite**
 - **Authentication:** [NextAuth.js](https://next-auth.js.org/)
 - **AI Integration:** [OpenRouter API](https://openrouter.ai/) (meta-llama/llama-3.1-8b-instruct:free)
-- **Emails:** [Nodemailer](https://nodemailer.com/)
 
 ## 🚀 Getting Started
 
@@ -51,53 +53,41 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 - npm or yarn
 
 ### Environment Variables
-Create a `.env` file in the root directory and populate it with the following:
+Create a `.env` file in the root directory. The application will automatically initialize `DATABASE_URL`, `NEXTAUTH_URL`, and `NEXTAUTH_SECRET` on first run if they are missing.
+
+Populate the following manually:
 
 ```env
-# Database
-DATABASE_URL="file:./dev.db"
-
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key"
-
 # Google OAuth
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
 # Admin Access
 ADMIN_EMAIL="admin@example.com"
-
-# Email Configuration (for approval notifications)
-EMAIL_USER="your-email@gmail.com"
-EMAIL_PASS="your-email-app-password"
+ADMIN_PASSWORD="your-secure-admin-password"
 
 # AI Assistant
 OPENROUTER_API_KEY="your-openrouter-api-key"
 ```
 
-### Installation
+### Installation & Setup
 
-1. **Clone the repository:**
+1. **Clone and Install:**
    ```bash
    git clone <repository-url>
    cd virtuehearts-reiki-training
+   npm install --legacy-peer-deps
    ```
 
-2. **Install dependencies:**
+2. **Database Preparation:**
+   Ensure you have run the initial migration/push to your local SQLite database:
    ```bash
-   npm install
-   ```
-
-3. **Initialize the database:**
-   ```bash
-   npx prisma generate
    npx prisma db push
    ```
 
 ### Running the Application
 
-Start the development server:
+The application automates environment setup on start.
 ```bash
 npm run dev
 ```

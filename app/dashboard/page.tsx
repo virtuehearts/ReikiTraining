@@ -8,6 +8,7 @@ import DailyCard from "@/components/DailyCard";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MessageCircle, Library } from "lucide-react";
+import MessageBaba from "@/components/MessageBaba";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -49,7 +50,7 @@ export default function DashboardPage() {
     return <div className="min-h-screen bg-background flex items-center justify-center text-accent">Ascending...</div>;
   }
 
-  if (hasIntake === false) {
+  if (hasIntake === false && session?.user?.role !== "ADMIN") {
     return (
       <div className="min-h-screen bg-background p-8 flex items-center justify-center">
         <IntakeForm onComplete={() => setHasIntake(true)} />
@@ -73,6 +74,7 @@ export default function DashboardPage() {
             <MessageCircle size={20} />
             <span>Chat with Mya</span>
           </Link>
+          <MessageBaba />
           <div className="text-right">
             <p className="text-sm font-medium">{session?.user?.name}</p>
             <button
