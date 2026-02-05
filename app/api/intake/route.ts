@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { intakes } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
@@ -13,24 +14,26 @@ export async function POST(req: Request) {
 
     const { age, location, experience, goal, healthConcerns } = await req.json();
 
-    const intake = await prisma.intake.upsert({
-      where: { userId: session.user.id },
-      update: {
-        age: parseInt(age) || undefined,
-        location,
-        experience,
-        goal,
-        healthConcerns,
-      },
-      create: {
+    const [intake] = await db.insert(intakes)
+      .values({
         userId: session.user.id,
-        age: parseInt(age) || undefined,
+        age: age ? parseInt(age) : null,
         location,
         experience,
         goal,
         healthConcerns,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [intakes.userId],
+        set: {
+          age: age ? parseInt(age) : null,
+          location,
+          experience,
+          goal,
+          healthConcerns,
+        },
+      })
+      .returning();
 
     return NextResponse.json({ success: true, intake });
   } catch (error) {

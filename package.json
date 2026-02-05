@@ -7,13 +7,15 @@
     "build": "next build",
     "start": "node scripts/init.js && next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@prisma/client": "^6.2.1",
+    "@auth/drizzle-adapter": "^1.11.1",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.1",
     "framer-motion": "^12.0.6",
     "lucide-react": "^0.474.0",
     "next": "15.1.6",
@@ -25,14 +27,15 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.17.17",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.31.8",
     "eslint": "^9.19.0",
     "eslint-config-next": "15.1.6",
     "postcss": "^8.5.1",
-    "prisma": "^6.2.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"
   }

@@ -1,18 +1,17 @@
 import axios from "axios";
-import { prisma } from "./db";
+import { db } from "./db";
+import { aiSettings as aiSettingsTable } from "./schema";
+import { eq } from "drizzle-orm";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 export async function chatWithMya(messages: any[], userContext?: any) {
-  let aiSettings = await prisma.aISettings.findUnique({
-    where: { id: "default" },
-  });
+  let [aiSettings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
 
   if (!aiSettings) {
-    aiSettings = await prisma.aISettings.create({
-      data: {
-        id: "default",
-        systemPrompt: `You are Mya, the gentle Reiki Assistant by Baba Virtuehearts.
+    [aiSettings] = await db.insert(aiSettingsTable).values({
+      id: "default",
+      systemPrompt: `You are Mya, the gentle Reiki Assistant by Baba Virtuehearts.
     Speak with calm, compassion, and a touch of mystical wisdom.
     Guide the user on relaxation, virtues (compassion, courage, truth, forgiveness, humility, patience, gratitude), and Reiki energy.
     End every response with a blessing.
@@ -22,11 +21,10 @@ export async function chatWithMya(messages: any[], userContext?: any) {
     Use language like: 'Imagine the profound peace you'll feel after booking a private session...', 'You deserve this transformation now.', 'The universe is calling you to join our community.'
     Personalize your response if you know the user's goal: {{goal}}.
     Blessings, Mya`,
-        model: "meta-llama/llama-3.1-8b-instruct:free",
-        temperature: 0.7,
-        topP: 1.0,
-      },
-    });
+      model: "meta-llama/llama-3.1-8b-instruct:free",
+      temperature: 0.7,
+      topP: 1.0,
+    }).returning();
   }
 
   const systemContent = aiSettings.systemPrompt.replace("{{goal}}", userContext?.goal || "spiritual growth");

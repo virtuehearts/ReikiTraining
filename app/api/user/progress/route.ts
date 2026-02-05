@@ -1,7 +1,9 @@
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { users } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -11,9 +13,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      with: {
         intake: true,
         progress: true,
       },

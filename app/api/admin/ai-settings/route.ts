@@ -1,7 +1,9 @@
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { aiSettings as aiSettingsTable } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -10,9 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const settings = await prisma.aISettings.findUnique({
-      where: { id: "default" },
-    });
+    const [settings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
 
     return NextResponse.json(settings);
   } catch (error) {
@@ -28,22 +28,25 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const settings = await prisma.aISettings.upsert({
-      where: { id: "default" },
-      update: {
-        systemPrompt: body.systemPrompt,
-        model: body.model,
-        temperature: parseFloat(body.temperature),
-        topP: parseFloat(body.topP),
-      },
-      create: {
+    const [settings] = await db.insert(aiSettingsTable)
+      .values({
         id: "default",
         systemPrompt: body.systemPrompt,
         model: body.model,
         temperature: parseFloat(body.temperature),
         topP: parseFloat(body.topP),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [aiSettingsTable.id],
+        set: {
+          systemPrompt: body.systemPrompt,
+          model: body.model,
+          temperature: parseFloat(body.temperature),
+          topP: parseFloat(body.topP),
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
 
     return NextResponse.json(settings);
   } catch (error) {
