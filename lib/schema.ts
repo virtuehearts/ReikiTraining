@@ -20,6 +20,7 @@ export const aiSettings = sqliteTable('aiSettings', {
   model: text('model').default('meta-llama/llama-3.1-8b-instruct:free').notNull(),
   temperature: real('temperature').default(0.7).notNull(),
   topP: real('topP').default(1.0).notNull(),
+  openrouterApiKey: text('openrouterApiKey'),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 

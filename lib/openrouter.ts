@@ -3,7 +3,7 @@ import { db } from "./db";
 import { aiSettings as aiSettingsTable } from "./schema";
 import { eq } from "drizzle-orm";
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY_ENV = process.env.OPENROUTER_API_KEY;
 
 export async function chatWithMya(messages: any[], userContext?: any) {
   let [aiSettings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
@@ -24,10 +24,12 @@ export async function chatWithMya(messages: any[], userContext?: any) {
       model: "meta-llama/llama-3.1-8b-instruct:free",
       temperature: 0.7,
       topP: 1.0,
+      openrouterApiKey: OPENROUTER_API_KEY_ENV,
     }).returning();
   }
 
   const systemContent = aiSettings.systemPrompt.replace("{{goal}}", userContext?.goal || "spiritual growth");
+  const apiKey = aiSettings.openrouterApiKey || OPENROUTER_API_KEY_ENV;
 
   const systemPrompt = {
     role: "system",
@@ -44,7 +46,7 @@ export async function chatWithMya(messages: any[], userContext?: any) {
     },
     {
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
     }

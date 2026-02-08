@@ -2,12 +2,16 @@
   "name": "virtuehearts-reiki-training",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "^18.18.0 || ^19.8.0 || >= 20.0.0"
+  },
   "scripts": {
     "dev": "node scripts/init.js && next dev",
     "build": "next build",
     "start": "node scripts/init.js && next start",
     "lint": "next lint",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "test": "node scripts/verify-db.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",

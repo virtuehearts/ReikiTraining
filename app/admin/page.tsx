@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Users, Settings, MessageSquare, Send, CheckCircle, XCircle } from "lucide-react";
+import { Users, Settings, MessageSquare, Send, CheckCircle, XCircle, Shield } from "lucide-react";
 
 interface User {
   id: string;
@@ -20,6 +20,7 @@ interface AISettings {
   model: string;
   temperature: number;
   topP: number;
+  openrouterApiKey?: string;
 }
 
 interface Message {
@@ -41,7 +42,9 @@ export default function AdminPage() {
     model: "",
     temperature: 0.7,
     topP: 1.0,
+    openrouterApiKey: "",
   });
+  const [newPassword, setNewPassword] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
   const [activeTab, setActiveTab] = useState("users");
@@ -155,6 +158,30 @@ export default function AdminPage() {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 8) {
+      alert("Password must be at least 8 characters");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/system-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      });
+      if (res.ok) {
+        alert("Admin password updated successfully");
+        setNewPassword("");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update password");
+      }
+    } catch (err) {
+      alert("Failed to update password");
+    }
+  };
+
   if (status === "loading" || !session || session.user.role !== "ADMIN") {
     return <div className="min-h-screen bg-background flex items-center justify-center text-accent">Channeling Admin Sanctuary...</div>;
   }
@@ -185,6 +212,13 @@ export default function AdminPage() {
             >
               <MessageSquare size={18} />
               <span>Messages</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("system")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'system' ? 'bg-primary text-white shadow-lg' : 'text-foreground-muted hover:text-accent'}`}
+            >
+              <Shield size={18} />
+              <span>System</span>
             </button>
           </div>
         </header>
@@ -271,6 +305,19 @@ export default function AdminPage() {
                     <p className="text-[10px] text-foreground-muted">Use {"{{goal}}"} as a placeholder for the user&apos;s intake goal.</p>
                   </div>
 
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground-muted">OpenRouter API Key</label>
+                      <input
+                        type="password"
+                        value={aiSettings.openrouterApiKey || ""}
+                        onChange={(e) => setAiSettings({...aiSettings, openrouterApiKey: e.target.value})}
+                        className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                        placeholder="sk-or-v1-..."
+                      />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground-muted">OpenRouter Model</label>
@@ -354,6 +401,33 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {activeTab === "system" && (
+              <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6 max-w-xl mx-auto">
+                <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">System Sanctuary Settings</h2>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground-muted">Change Admin Password</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                      placeholder="New sacred password..."
+                    />
+                    <p className="text-[10px] text-foreground-muted">Minimum 8 characters. This will update your login credentials.</p>
+                  </div>
+
+                  <button
+                    onClick={handlePasswordChange}
+                    className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-light transition-all shadow-lg"
+                  >
+                    Update Admin Password
+                  </button>
+                </div>
               </div>
             )}
           </div>

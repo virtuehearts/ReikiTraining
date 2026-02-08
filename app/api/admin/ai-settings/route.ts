@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         model: body.model,
         temperature: parseFloat(body.temperature),
         topP: parseFloat(body.topP),
+        openrouterApiKey: body.openrouterApiKey,
       })
       .onConflictDoUpdate({
         target: [aiSettingsTable.id],
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
           model: body.model,
           temperature: parseFloat(body.temperature),
           topP: parseFloat(body.topP),
+          openrouterApiKey: body.openrouterApiKey,
           updatedAt: new Date(),
         },
       })

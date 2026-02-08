@@ -1,0 +1,88 @@
+
+> virtuehearts-reiki-training@0.1.0 dev
+> node scripts/init.js && next dev
+
+--- Initializing Environment ---
+Environment file is already complete.
+--- Initialization Complete ---
+   ▲ Next.js 15.1.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1871ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 10.3s (718 modules)
+ GET /login 200 in 11315ms
+ ✓ Compiled in 1118ms (345 modules)
+ GET /login? 200 in 106ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 2.6s (1033 modules)
+ GET /api/auth/session 200 in 4851ms
+ GET /login 200 in 160ms
+ GET /api/auth/session 200 in 114ms
+ GET /api/auth/providers 200 in 375ms
+ GET /api/auth/csrf 200 in 81ms
+[next-auth][error][SIGNIN_OAUTH_ERROR]
+https://next-auth.js.org/errors#signin_oauth_error client_id is required {
+  error: {
+    message: 'client_id is required',
+    stack: 'TypeError: client_id is required\n' +
+      '    at new BaseClient (webpack-internal:///(rsc)/./node_modules/openid-client/lib/client.js:148:19)\n' +
+      '    at new Client (webpack-internal:///(rsc)/./node_modules/openid-client/lib/client.js:1673:13)\n' +
+      '    at openidClient (webpack-internal:///(rsc)/./node_modules/next-auth/core/lib/oauth/client.js:24:18)\n' +
+      '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+      '    at async getAuthorizationUrl (webpack-internal:///(rsc)/./node_modules/next-auth/core/lib/oauth/authorization-url.js:58:18)\n' +
+      '    at async Object.signin (webpack-internal:///(rsc)/./node_modules/next-auth/core/routes/signin.js:31:24)\n' +
+      '    at async AuthHandler (webpack-internal:///(rsc)/./node_modules/next-auth/core/index.js:230:26)\n' +
+      '    at async NextAuthRouteHandler (webpack-internal:///(rsc)/./node_modules/next-auth/next/index.js:57:28)\n' +
+      '    at async NextAuth._args$ (webpack-internal:///(rsc)/./node_modules/next-auth/next/index.js:89:16)\n' +
+      '    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:10:32847)\n' +
+      '    at async AppRouteRouteModule.handle (/app/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:10:39868)\n' +
+      '    at async doRender (/app/node_modules/next/dist/server/base-server.js:1452:42)\n' +
+      '    at async responseGenerator (/app/node_modules/next/dist/server/base-server.js:1822:28)\n' +
+      '    at async DevServer.renderToResponseWithComponentsImpl (/app/node_modules/next/dist/server/base-server.js:1832:28)\n' +
+      '    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:2259:24)\n' +
+      '    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:2297:32)\n' +
+      '    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:959:25)\n' +
+      '    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:281:17)\n' +
+      '    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:853:17)\n' +
+      '    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:371:20\n' +
+      '    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:153:20)\n' +
+      '    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:368:24)\n' +
+      '    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:230:21)\n' +
+      '    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:408:24)\n' +
+      '    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:432:13)\n' +
+      '    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:146:13)',
+    name: 'TypeError'
+  },
+  providerId: 'google',
+  message: 'client_id is required'
+}
+ POST /api/auth/signin/google 200 in 60ms
+ GET /api/auth/error?error=OAuthSignin 302 in 29ms
+ GET /api/auth/signin?error=OAuthSignin 302 in 19ms
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard&error=OAuthSignin 200 in 54ms
+ GET /api/auth/session 200 in 33ms
+ GET /login 200 in 33ms
+ GET /api/auth/session 200 in 29ms
+ GET /api/auth/providers 200 in 13ms
+ GET /api/auth/csrf 200 in 9ms
+ POST /api/auth/callback/credentials 200 in 192ms
+ GET /api/auth/session 200 in 18ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1211ms (200 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1166ms (1094 modules)
+ GET /dashboard 200 in 1297ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 829ms (1124 modules)
+ GET /api/user/progress 200 in 1206ms
+ GET /admin 200 in 1204ms
+ GET /api/auth/session 200 in 29ms
+ ○ Compiling /api/admin/ai-settings ...
+ ✓ Compiled /api/admin/ai-settings in 626ms (1128 modules)
+ GET /api/admin/ai-settings 500 in 705ms
+ GET /api/admin/users 200 in 846ms
+ ✓ Compiled in 671ms (382 modules)
