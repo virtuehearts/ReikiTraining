@@ -8,10 +8,14 @@ import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -23,10 +27,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        const isAdmin = credentials.email === process.env.ADMIN_EMAIL;
+        const inputEmail = credentials.email.toLowerCase();
+        const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+        const isAdmin = inputEmail === adminEmail;
         const adminPasswordEnv = process.env.ADMIN_PASSWORD;
 
-        const [existingUser] = await db.select().from(users).where(eq(users.email, credentials.email)).limit(1);
+        const [existingUser] = await db.select().from(users).where(eq(users.email, inputEmail)).limit(1);
         let user = existingUser;
 
         // 1. Try DB password first (important if changed via UI)
@@ -49,7 +55,7 @@ export const authOptions: NextAuthOptions = {
         if (isAdmin && adminPasswordEnv && credentials.password === adminPasswordEnv) {
           if (!user) {
             const [newUser] = await db.insert(users).values({
-              email: credentials.email,
+              email: inputEmail,
               password: await bcrypt.hash(adminPasswordEnv, 10),
               role: "ADMIN",
               status: "APPROVED",
@@ -91,12 +97,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const [existingUser] = await db.select().from(users).where(eq(users.email, user.email!)).limit(1);
+        const userEmail = user.email?.toLowerCase();
+        if (!userEmail) return false;
+
+        const [existingUser] = await db.select().from(users).where(eq(users.email, userEmail)).limit(1);
 
         if (!existingUser) {
-          const isAdmin = user.email === process.env.ADMIN_EMAIL;
+          const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+          const isAdmin = userEmail === adminEmail;
           await db.insert(users).values({
-            email: user.email!,
+            email: userEmail,
             name: user.name,
             image: user.image,
             status: isAdmin ? "APPROVED" : "PENDING",
@@ -108,7 +118,8 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        const [dbUser] = await db.select().from(users).where(eq(users.email, user.email!)).limit(1);
+        const userEmail = user.email?.toLowerCase();
+        const [dbUser] = await db.select().from(users).where(eq(users.email, userEmail!)).limit(1);
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;

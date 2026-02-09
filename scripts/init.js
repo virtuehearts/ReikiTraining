@@ -13,11 +13,12 @@ function main() {
   }
 
   const defaultEnv = {
-    NEXTAUTH_URL: 'http://localhost:3000',
     NEXTAUTH_SECRET: crypto.randomBytes(32).toString('hex'),
     DATABASE_URL: 'file:./dev.db',
     ADMIN_EMAIL: 'admin@virtuehearts.org',
     ADMIN_PASSWORD: 'InitialAdminPassword123!',
+    GOOGLE_CLIENT_ID: '',
+    GOOGLE_CLIENT_SECRET: '',
     OPENROUTER_API_KEY: 'sk-or-v1-placeholder',
   };
 
