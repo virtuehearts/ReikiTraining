@@ -19,6 +19,8 @@ function main() {
     ADMIN_EMAIL: 'admin@virtuehearts.org',
     ADMIN_PASSWORD: 'InitialAdminPassword123!',
     OPENROUTER_API_KEY: 'sk-or-v1-placeholder',
+    GOOGLE_CLIENT_ID: '',
+    GOOGLE_CLIENT_SECRET: '',
   };
 
   let updated = false;
