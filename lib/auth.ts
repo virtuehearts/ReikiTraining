@@ -8,10 +8,14 @@ import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -91,12 +95,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        const [existingUser] = await db.select().from(users).where(eq(users.email, user.email!)).limit(1);
+        if (!user.email) {
+          return false;
+        }
+        const [existingUser] = await db.select().from(users).where(eq(users.email, user.email)).limit(1);
 
         if (!existingUser) {
           const isAdmin = user.email === process.env.ADMIN_EMAIL;
           await db.insert(users).values({
-            email: user.email!,
+            email: user.email,
             name: user.name,
             image: user.image,
             status: isAdmin ? "APPROVED" : "PENDING",
