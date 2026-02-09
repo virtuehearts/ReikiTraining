@@ -6,12 +6,13 @@ import { eq } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email: rawEmail, password } = await req.json();
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const email = rawEmail.toLowerCase();
     const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (existingUser) {
@@ -20,12 +21,13 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
     const [user] = await db.insert(users).values({
       name,
       email,
       password: hashedPassword,
       status: "PENDING",
-      role: email === process.env.ADMIN_EMAIL ? "ADMIN" : "USER",
+      role: email === adminEmail ? "ADMIN" : "USER",
     }).returning();
 
     return NextResponse.json({ user: { email: user.email, name: user.name } });
