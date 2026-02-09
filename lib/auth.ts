@@ -24,45 +24,58 @@ export const authOptions: NextAuthOptions = {
         }
 
         const isAdmin = credentials.email === process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        const adminPasswordEnv = process.env.ADMIN_PASSWORD;
 
         const [existingUser] = await db.select().from(users).where(eq(users.email, credentials.email)).limit(1);
         let user = existingUser;
 
-        // Handle Admin special case from .env
-        if (isAdmin && adminPassword) {
-          if (credentials.password === adminPassword) {
-            if (!user) {
-              const [newUser] = await db.insert(users).values({
-                email: credentials.email,
-                password: await bcrypt.hash(adminPassword, 10),
-                role: "ADMIN",
-                status: "APPROVED",
-              }).returning();
-              user = newUser;
-            } else {
-              // Ensure admin has correct password, role and status
-              const isCorrectInDb = user.password ? await bcrypt.compare(adminPassword, user.password) : false;
-              if (!isCorrectInDb || user.role !== "ADMIN" || user.status !== "APPROVED") {
-                const [updatedUser] = await db.update(users)
-                  .set({
-                    password: await bcrypt.hash(adminPassword, 10),
-                    role: "ADMIN",
-                    status: "APPROVED",
-                  })
-                  .where(eq(users.id, user.id))
-                  .returning();
-                user = updatedUser;
-              }
+        // 1. Try DB password first (important if changed via UI)
+        if (user && user.password) {
+          const isValidInDb = await bcrypt.compare(credentials.password, user.password);
+          if (isValidInDb) {
+            // If it's the admin email, ensure role is correct
+            if (isAdmin && (user.role !== "ADMIN" || user.status !== "APPROVED")) {
+              const [updatedUser] = await db.update(users)
+                .set({ role: "ADMIN", status: "APPROVED" })
+                .where(eq(users.id, user.id))
+                .returning();
+              user = updatedUser;
             }
             return user as any;
-          } else if (isAdmin) {
-            throw new Error("Invalid admin password");
           }
         }
 
-        if (!user || !user.password) {
+        // 2. Fallback to .env password for initial setup or override
+        if (isAdmin && adminPasswordEnv && credentials.password === adminPasswordEnv) {
+          if (!user) {
+            const [newUser] = await db.insert(users).values({
+              email: credentials.email,
+              password: await bcrypt.hash(adminPasswordEnv, 10),
+              role: "ADMIN",
+              status: "APPROVED",
+            }).returning();
+            user = newUser;
+          } else {
+            const [updatedUser] = await db.update(users)
+              .set({
+                password: await bcrypt.hash(adminPasswordEnv, 10),
+                role: "ADMIN",
+                status: "APPROVED",
+              })
+              .where(eq(users.id, user.id))
+              .returning();
+            user = updatedUser;
+          }
+          return user as any;
+        }
+
+        if (!user) {
           throw new Error("User not found");
+        }
+
+        // 3. Final check for non-admin or failed admin fallback
+        if (!user.password) {
+          throw new Error("Invalid credentials");
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
