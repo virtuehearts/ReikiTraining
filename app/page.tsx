@@ -40,11 +40,21 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <footer className="p-8 text-center text-foreground-muted/60 border-t border-primary/10">
-        <p className="mb-2">Contact: 647-781-8371</p>
-        <p className="font-script text-xl text-accent/80">
-          Blessings of peace, Baba Virtuehearts
-        </p>
+      <footer className="p-8 text-center text-foreground-muted/60 border-t border-primary/10 space-y-4">
+        <div>
+          <p className="mb-2">Contact: 647-781-8371</p>
+          <p className="font-script text-xl text-accent/80">
+            Blessings of peace, Baba Virtuehearts
+          </p>
+        </div>
+        <div>
+          <Link
+            href="/admin"
+            className="text-xs hover:text-accent transition-colors opacity-50 hover:opacity-100"
+          >
+            Admin Sanctuary
+          </Link>
+        </div>
       </footer>
     </div>
   );
