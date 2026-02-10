@@ -13,7 +13,6 @@ function main() {
   }
 
   const defaultEnv = {
-    NEXTAUTH_URL: 'http://localhost:3000',
     NEXTAUTH_SECRET: crypto.randomBytes(32).toString('hex'),
     DATABASE_URL: 'file:./dev.db',
     ADMIN_EMAIL: 'admin@virtuehearts.org',
