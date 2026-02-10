@@ -24,8 +24,9 @@ export const authOptions: NextAuthOptions = {
         }
 
         const email = credentials.email.toLowerCase();
-        const isAdmin = email === process.env.ADMIN_EMAIL?.toLowerCase();
-        const adminPasswordEnv = process.env.ADMIN_PASSWORD;
+        const adminEmailEnv = process.env.ADMIN_EMAIL?.replace(/^['"](.*)['"]$/, '$1').toLowerCase();
+        const isAdmin = email === adminEmailEnv;
+        const adminPasswordEnv = process.env.ADMIN_PASSWORD?.replace(/^['"](.*)['"]$/, '$1');
 
         const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
         let user = existingUser;
@@ -96,7 +97,8 @@ export const authOptions: NextAuthOptions = {
         const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
         if (!existingUser) {
-          const isAdmin = email === process.env.ADMIN_EMAIL?.toLowerCase();
+          const adminEmailEnv = process.env.ADMIN_EMAIL?.replace(/^['"](.*)['"]$/, '$1').toLowerCase();
+          const isAdmin = email === adminEmailEnv;
           await db.insert(users).values({
             email: email,
             name: user.name,
