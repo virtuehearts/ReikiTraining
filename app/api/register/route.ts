@@ -22,12 +22,13 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const adminEmailEnv = process.env.ADMIN_EMAIL?.replace(/^['"](.*)['"]$/, '$1').toLowerCase();
     const [user] = await db.insert(users).values({
       name,
       email,
       password: hashedPassword,
       status: "PENDING",
-      role: email === process.env.ADMIN_EMAIL?.toLowerCase() ? "ADMIN" : "USER",
+      role: email === adminEmailEnv ? "ADMIN" : "USER",
     }).returning();
 
     return NextResponse.json({ user: { email: user.email, name: user.name } });

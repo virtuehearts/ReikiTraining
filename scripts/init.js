@@ -24,7 +24,7 @@ function main() {
   for (const [key, value] of Object.entries(defaultEnv)) {
     if (!envContent.includes(`${key}=`)) {
       console.log(`Adding missing environment variable: ${key}`);
-      envContent += `\n${key}="${value}"`;
+      envContent += `\n${key}=${value}`;
       updated = true;
     }
   }
