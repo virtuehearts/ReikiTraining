@@ -42,7 +42,7 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 
 - **Framework:** [Next.js 15 (App Router)](https://nextjs.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Database:** [Prisma](https://www.prisma.io/) with **SQLite**
+- **Database:** [Drizzle ORM](https://orm.drizzle.team/) with **SQLite**
 - **Authentication:** [NextAuth.js](https://next-auth.js.org/)
 - **AI Integration:** [OpenRouter API](https://openrouter.ai/) (meta-llama/llama-3.1-8b-instruct:free)
 
@@ -53,7 +53,7 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 - npm or yarn
 
 ### Environment Variables
-Create a `.env` file in the root directory. The application will automatically initialize `DATABASE_URL`, `NEXTAUTH_URL`, and `NEXTAUTH_SECRET` on first run if they are missing.
+Create a `.env` file in the root directory. The application will automatically initialize `DATABASE_URL`, `NEXTAUTH_URL`, and `NEXTAUTH_SECRET` on first run if they are missing by running `npm run dev` or `npm start`.
 
 Populate the following manually:
 
@@ -80,10 +80,21 @@ OPENROUTER_API_KEY="your-openrouter-api-key"
    ```
 
 2. **Database Preparation:**
-   Ensure you have run the initial migration/push to your local SQLite database:
+   Ensure you have run the initial push to your local SQLite database to create the necessary tables:
    ```bash
-   npx prisma db push
+   npm run db:push
    ```
+
+### 🛡️ Seeded Admin Login
+The application comes with seeded admin credentials defined in your `.env` file (automatically generated on first run if not present).
+
+- **Default Admin Email:** `admin@virtuehearts.org`
+- **Default Admin Password:** `InitialAdminPassword123!`
+
+To log in as an administrator:
+1. Navigate to the login page (or click "Admin Sanctuary" in the footer).
+2. Enter the admin email and password.
+3. The system will automatically create the admin account in the database upon first successful login with these credentials.
 
 ### Running the Application
 

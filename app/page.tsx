@@ -45,6 +45,12 @@ export default function LandingPage() {
         <p className="font-script text-xl text-accent/80">
           Blessings of peace, Baba Virtuehearts
         </p>
+        <Link
+          href="/admin"
+          className="text-xs text-foreground-muted/20 hover:text-accent/50 transition-colors mt-4 inline-block"
+        >
+          Admin Sanctuary
+        </Link>
       </footer>
     </div>
   );
