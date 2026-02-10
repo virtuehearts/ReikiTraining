@@ -5,6 +5,97 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { normalizeEnv } from "./utils";
+
+export const authorize = async (credentials: Record<"email" | "password", string> | undefined) => {
+  if (!credentials?.email || !credentials?.password) {
+    throw new Error("Invalid credentials");
+  }
+
+  const email = credentials.email.trim().toLowerCase();
+  const adminEmailEnv = normalizeEnv(process.env.ADMIN_EMAIL)?.toLowerCase();
+  const isAdmin = email === adminEmailEnv;
+  const adminPasswordEnv = normalizeEnv(process.env.ADMIN_PASSWORD);
+
+  console.log(`[Auth] Authorize attempt for: ${email} (isAdmin: ${isAdmin})`);
+
+  const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  let user = existingUser;
+
+  // Track if we've already checked the DB password to avoid redundant bcrypt.compare calls
+  let dbPasswordChecked = false;
+  let dbPasswordValid = false;
+
+  // 1. Try DB password first (important if changed via UI)
+  if (user && user.password) {
+    dbPasswordValid = await bcrypt.compare(credentials.password, user.password);
+    dbPasswordChecked = true;
+
+    if (dbPasswordValid) {
+      console.log(`[Auth] DB password valid for ${email}`);
+      // If it's the admin email, ensure role is correct
+      if (isAdmin && (user.role !== "ADMIN" || user.status !== "APPROVED")) {
+        const [updatedUser] = await db.update(users)
+          .set({ role: "ADMIN", status: "APPROVED" })
+          .where(eq(users.id, user.id))
+          .returning();
+        user = updatedUser;
+      }
+      return user as any;
+    }
+  }
+
+  // 2. Fallback to .env password for initial setup or override
+  if (isAdmin && adminPasswordEnv && credentials.password === adminPasswordEnv) {
+    console.log(`[Auth] Fallback to .env password for admin: ${email}`);
+    if (!user) {
+      const [newUser] = await db.insert(users).values({
+        email: email,
+        password: await bcrypt.hash(adminPasswordEnv, 10),
+        role: "ADMIN",
+        status: "APPROVED",
+      }).returning();
+      user = newUser;
+    } else {
+      const [updatedUser] = await db.update(users)
+        .set({
+          password: await bcrypt.hash(adminPasswordEnv, 10),
+          role: "ADMIN",
+          status: "APPROVED",
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+      user = updatedUser;
+    }
+    return user as any;
+  }
+
+  // 3. Final failure checks
+  if (!user) {
+    console.log(`[Auth] User not found: ${email}`);
+    throw new Error("User not found");
+  }
+
+  if (!user.password) {
+    console.log(`[Auth] No password set for user: ${email}`);
+    throw new Error("Invalid credentials");
+  }
+
+  // If we already checked and it was invalid, or if we haven't checked yet (which shouldn't happen due to logic above)
+  if (dbPasswordChecked && !dbPasswordValid) {
+    console.log(`[Auth] Invalid password for: ${email}`);
+    throw new Error("Invalid password");
+  }
+
+  // This part is mostly for completeness, normally we'd have returned or thrown by now
+  const isValid = await bcrypt.compare(credentials.password, user.password);
+  if (!isValid) {
+    console.log(`[Auth] Invalid password for: ${email}`);
+    throw new Error("Invalid password");
+  }
+
+  return user as any;
+};
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,86 +109,17 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials");
-        }
-
-        const email = credentials.email.toLowerCase();
-        const adminEmailEnv = process.env.ADMIN_EMAIL?.replace(/^['"](.*)['"]$/, '$1').toLowerCase();
-        const isAdmin = email === adminEmailEnv;
-        const adminPasswordEnv = process.env.ADMIN_PASSWORD?.replace(/^['"](.*)['"]$/, '$1');
-
-        const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-        let user = existingUser;
-
-        // 1. Try DB password first (important if changed via UI)
-        if (user && user.password) {
-          const isValidInDb = await bcrypt.compare(credentials.password, user.password);
-          if (isValidInDb) {
-            // If it's the admin email, ensure role is correct
-            if (isAdmin && (user.role !== "ADMIN" || user.status !== "APPROVED")) {
-              const [updatedUser] = await db.update(users)
-                .set({ role: "ADMIN", status: "APPROVED" })
-                .where(eq(users.id, user.id))
-                .returning();
-              user = updatedUser;
-            }
-            return user as any;
-          }
-        }
-
-        // 2. Fallback to .env password for initial setup or override
-        if (isAdmin && adminPasswordEnv && credentials.password === adminPasswordEnv) {
-          if (!user) {
-            const [newUser] = await db.insert(users).values({
-              email: email,
-              password: await bcrypt.hash(adminPasswordEnv, 10),
-              role: "ADMIN",
-              status: "APPROVED",
-            }).returning();
-            user = newUser;
-          } else {
-            const [updatedUser] = await db.update(users)
-              .set({
-                password: await bcrypt.hash(adminPasswordEnv, 10),
-                role: "ADMIN",
-                status: "APPROVED",
-              })
-              .where(eq(users.id, user.id))
-              .returning();
-            user = updatedUser;
-          }
-          return user as any;
-        }
-
-        if (!user) {
-          throw new Error("User not found");
-        }
-
-        // 3. Final check for non-admin or failed admin fallback
-        if (!user.password) {
-          throw new Error("Invalid credentials");
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isValid) {
-          throw new Error("Invalid password");
-        }
-
-        return user as any;
-      },
+      authorize,
     }),
   ],
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
-        const email = user.email.toLowerCase();
+        const email = user.email.trim().toLowerCase();
         const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
         if (!existingUser) {
-          const adminEmailEnv = process.env.ADMIN_EMAIL?.replace(/^['"](.*)['"]$/, '$1').toLowerCase();
+          const adminEmailEnv = normalizeEnv(process.env.ADMIN_EMAIL)?.toLowerCase();
           const isAdmin = email === adminEmailEnv;
           await db.insert(users).values({
             email: email,
@@ -112,7 +134,7 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user?.email) {
-        const email = user.email.toLowerCase();
+        const email = user.email.trim().toLowerCase();
         const [dbUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
         if (dbUser) {
           token.id = dbUser.id;

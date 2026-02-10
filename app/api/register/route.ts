@@ -3,6 +3,7 @@ import { users } from "@/lib/schema";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { normalizeEnv } from "@/lib/utils";
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const email = rawEmail.toLowerCase();
+    const email = rawEmail.trim().toLowerCase();
 
     const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const adminEmailEnv = process.env.ADMIN_EMAIL?.replace(/^['"](.*)['"]$/, '$1').toLowerCase();
+    const adminEmailEnv = normalizeEnv(process.env.ADMIN_EMAIL)?.toLowerCase();
     const [user] = await db.insert(users).values({
       name,
       email,
