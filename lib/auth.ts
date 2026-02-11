@@ -19,6 +19,8 @@ export const authorize = async (credentials: Record<"email" | "password", string
 
   console.log(`[Auth] Authorize attempt for: ${email}`);
   console.log(`[Auth] Admin check: target=${adminEmailEnv || 'MISSING'} | isAdmin=${isAdmin}`);
+  console.log(`[Auth] Password check: provided_len=${credentials.password.length} | env_pass_set=${!!adminPasswordEnv} | env_pass_len=${adminPasswordEnv?.length || 0}`);
+
   if (isAdmin && !adminPasswordEnv) {
     console.warn(`[Auth] ADMIN_EMAIL matched but ADMIN_PASSWORD is NOT set in environment!`);
   }
@@ -77,6 +79,11 @@ export const authorize = async (credentials: Record<"email" | "password", string
   }
 
   // 3. Final failure checks
+  if (isAdmin) {
+    console.log(`[Auth] Admin email matched but neither DB nor .env password valid: ${email}`);
+    throw new Error("Invalid password");
+  }
+
   if (!user) {
     console.log(`[Auth] User not found: ${email}`);
     throw new Error("User not found");

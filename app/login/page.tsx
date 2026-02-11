@@ -37,7 +37,12 @@ function LoginContent() {
       });
 
       if (res?.error) {
-        setError("Invalid email or password");
+        console.error("[Auth] Login failed:", res.error);
+        // Map common NextAuth error codes to user-friendly messages
+        const errorMsg = res.error === "CredentialsSignin"
+          ? "Invalid email or password"
+          : res.error;
+        setError(errorMsg);
       } else {
         router.push(callbackUrl);
       }
