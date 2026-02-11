@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 const envPath = path.join(process.cwd(), '.env');
 
@@ -37,6 +38,14 @@ function main() {
   }
 
   console.log('--- Initialization Complete ---');
+
+  try {
+    console.log('--- Starting Database Setup ---');
+    execSync('node scripts/setup-db.js', { stdio: 'inherit' });
+  } catch (err) {
+    console.error('Database setup failed:', err);
+    process.exit(1);
+  }
 }
 
 main();
