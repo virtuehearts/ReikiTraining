@@ -12,6 +12,9 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<any>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const isAdminLogin = callbackUrl.includes("/admin");
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -20,9 +23,6 @@ function LoginContent() {
     };
     fetchProviders();
   }, []);
-
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,10 +54,14 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="max-w-md w-full space-y-8 bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-2xl">
+      <div className={`max-w-md w-full space-y-8 bg-background-alt p-8 rounded-2xl border ${isAdminLogin ? 'border-accent/40 shadow-accent/10' : 'border-primary/20'} shadow-2xl transition-all duration-500`}>
         <div className="text-center">
-          <h2 className="text-4xl font-serif text-accent mb-2">Welcome Back</h2>
-          <p className="text-foreground-muted font-sans">Return to your sacred training</p>
+          <h2 className="text-4xl font-serif text-accent mb-2">
+            {isAdminLogin ? "Admin Sanctuary" : "Welcome Back"}
+          </h2>
+          <p className="text-foreground-muted font-sans">
+            {isAdminLogin ? "Enter the Inner Sanctum" : "Return to your sacred training"}
+          </p>
         </div>
 
         <div className="mt-8 space-y-6">
@@ -132,19 +136,25 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-primary to-primary-light text-white rounded-lg font-semibold hover:from-primary-light hover:to-primary transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+              className={`w-full py-3 px-4 bg-gradient-to-r ${isAdminLogin ? 'from-accent to-accent-light hover:from-accent-light hover:to-accent' : 'from-primary to-primary-light hover:from-primary-light hover:to-primary'} text-white rounded-lg font-semibold transition-all shadow-lg ${isAdminLogin ? 'shadow-accent/20' : 'shadow-primary/20'} disabled:opacity-50`}
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loading ? "Channelling..." : (isAdminLogin ? "Enter Sanctuary" : "Sign In")}
             </button>
           </form>
 
-          <div className="text-center">
-            <p className="text-foreground-muted">
-              New to the training?{" "}
-              <Link href="/register" className="text-accent hover:text-accent-light transition-colors">
-                Join Now
+          <div className="text-center space-y-4">
+            {!isAdminLogin ? (
+              <p className="text-foreground-muted">
+                New to the training?{" "}
+                <Link href="/register" className="text-accent hover:text-accent-light transition-colors">
+                  Join Now
+                </Link>
+              </p>
+            ) : (
+              <Link href="/" className="text-sm text-foreground-muted hover:text-accent transition-colors">
+                ← Return to Temple
               </Link>
-            </p>
+            )}
           </div>
         </div>
       </div>

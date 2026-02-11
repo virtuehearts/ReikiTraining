@@ -14,10 +14,14 @@ export const authorize = async (credentials: Record<"email" | "password", string
 
   const email = credentials.email.trim().toLowerCase();
   const adminEmailEnv = normalizeEnv(process.env.ADMIN_EMAIL)?.toLowerCase();
-  const isAdmin = email === adminEmailEnv;
   const adminPasswordEnv = normalizeEnv(process.env.ADMIN_PASSWORD);
+  const isAdmin = !!adminEmailEnv && email === adminEmailEnv;
 
-  console.log(`[Auth] Authorize attempt for: ${email} (isAdmin: ${isAdmin})`);
+  console.log(`[Auth] Authorize attempt for: ${email}`);
+  console.log(`[Auth] Admin check: target=${adminEmailEnv || 'MISSING'} | isAdmin=${isAdmin}`);
+  if (isAdmin && !adminPasswordEnv) {
+    console.warn(`[Auth] ADMIN_EMAIL matched but ADMIN_PASSWORD is NOT set in environment!`);
+  }
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   let user = existingUser;
@@ -47,8 +51,9 @@ export const authorize = async (credentials: Record<"email" | "password", string
 
   // 2. Fallback to .env password for initial setup or override
   if (isAdmin && adminPasswordEnv && credentials.password === adminPasswordEnv) {
-    console.log(`[Auth] Fallback to .env password for admin: ${email}`);
+    console.log(`[Auth] Fallback to .env password success for admin: ${email}`);
     if (!user) {
+      console.log(`[Auth] Creating new admin user in DB`);
       const [newUser] = await db.insert(users).values({
         email: email,
         password: await bcrypt.hash(adminPasswordEnv, 10),
@@ -57,6 +62,7 @@ export const authorize = async (credentials: Record<"email" | "password", string
       }).returning();
       user = newUser;
     } else {
+      console.log(`[Auth] Updating existing user to admin with .env credentials`);
       const [updatedUser] = await db.update(users)
         .set({
           password: await bcrypt.hash(adminPasswordEnv, 10),
