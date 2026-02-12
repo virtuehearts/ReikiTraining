@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 const envPath = path.join(process.cwd(), '.env');
 
@@ -14,6 +15,7 @@ function main() {
 
   const defaultEnv = {
     NEXTAUTH_SECRET: crypto.randomBytes(32).toString('hex'),
+    NEXTAUTH_URL: 'http://localhost:3000',
     DATABASE_URL: 'file:./dev.db',
     ADMIN_EMAIL: 'admin@virtuehearts.org',
     ADMIN_PASSWORD: 'InitialAdminPassword123!',
@@ -37,6 +39,13 @@ function main() {
   }
 
   console.log('--- Initialization Complete ---');
+
+  console.log('--- Running Database Setup ---');
+  try {
+    execSync('node scripts/setup-db.js', { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Database setup failed:', error.message);
+  }
 }
 
 main();
