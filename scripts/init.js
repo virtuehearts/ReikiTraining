@@ -38,6 +38,12 @@ function main() {
     console.log('Environment file is already complete.');
   }
 
+  if (!envContent.includes('NEXTAUTH_URL=http://localhost:3000')) {
+    console.warn('\n[IMPORTANT] NEXTAUTH_URL in .env does not match the default. Ensure it matches your access URL.');
+  } else {
+    console.log('\n[TIP] If you access the site via a different port or 127.0.0.1, please update NEXTAUTH_URL in .env');
+  }
+
   console.log('--- Initialization Complete ---');
 
   console.log('--- Running Database Setup ---');

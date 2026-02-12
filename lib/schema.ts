@@ -74,10 +74,7 @@ export const reflections = sqliteTable('reflection', {
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
-  intake: one(intakes, {
-    fields: [users.id],
-    references: [intakes.userId],
-  }),
+  intake: one(intakes),
   progress: many(progress),
   reflections: many(reflections),
   chatMessages: many(chatMessages),
