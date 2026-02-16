@@ -8,19 +8,24 @@ export default withAuth(
     const role = token?.role;
     const { pathname } = req.nextUrl;
 
-    // Allow access to pending page if status is PENDING
-    if (status === "PENDING" && pathname !== "/pending") {
-      return NextResponse.redirect(new URL("/pending", req.url));
+    if (role === "ADMIN" && pathname.startsWith("/dashboard")) {
+      return NextResponse.redirect(new URL("/admin", req.url));
     }
 
-    // Redirect from pending if status is APPROVED
-    if (status === "APPROVED" && pathname === "/pending") {
+    if (role !== "ADMIN" && pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    // Admin check
-    if (pathname.startsWith("/admin") && role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+    // Restrict non-approved accounts from app surfaces
+    if (role !== "ADMIN") {
+      if (status === "APPROVED" && pathname === "/pending") {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+
+      const isRestrictedStatus = status === "PENDING" || status === "REJECTED" || status === "DISABLED";
+      if (isRestrictedStatus && pathname !== "/pending") {
+        return NextResponse.redirect(new URL("/pending", req.url));
+      }
     }
 
     return NextResponse.next();
@@ -33,10 +38,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/mya-chat/:path*",
-    "/pending",
-  ],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/mya-chat/:path*", "/pending"],
 };

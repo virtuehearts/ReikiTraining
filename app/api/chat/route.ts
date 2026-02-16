@@ -63,7 +63,11 @@ export async function POST(req: Request) {
       content: lastUserMessage.content
     });
 
-    const reply = await chatWithMya([...history, lastUserMessage], user?.intake);
+    const reply = await chatWithMya([...history, lastUserMessage], user?.intake, {
+      role: session.user.role,
+      name: user?.name,
+      email: user?.email,
+    });
 
     // Save assistant reply to DB
     await db.insert(chatMessages).values({

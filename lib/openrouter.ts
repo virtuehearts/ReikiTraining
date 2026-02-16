@@ -5,7 +5,13 @@ import { eq } from "drizzle-orm";
 
 const OPENROUTER_API_KEY_ENV = process.env.OPENROUTER_API_KEY;
 
-export async function chatWithMya(messages: any[], userContext?: any) {
+type ChatUserContext = {
+  role?: string;
+  name?: string | null;
+  email?: string | null;
+};
+
+export async function chatWithMya(messages: any[], userContext?: any, user?: ChatUserContext) {
   let [aiSettings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
 
   if (!aiSettings) {
@@ -29,11 +35,14 @@ export async function chatWithMya(messages: any[], userContext?: any) {
   }
 
   const systemContent = aiSettings.systemPrompt.replace("{{goal}}", userContext?.goal || "spiritual growth");
+  const adminIdentityPrompt = user?.role === "ADMIN"
+    ? "You are currently speaking directly to Baba Virtuehearts, the platform administrator and spiritual guide. Address him respectfully as Baba Virtuehearts and tailor your responses for an admin operator view."
+    : "";
   const apiKey = aiSettings.openrouterApiKey || OPENROUTER_API_KEY_ENV;
 
   const systemPrompt = {
     role: "system",
-    content: systemContent,
+    content: `${systemContent}\n\n${adminIdentityPrompt}`.trim(),
   };
 
   const response = await axios.post(
