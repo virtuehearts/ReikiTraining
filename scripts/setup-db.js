@@ -49,7 +49,7 @@ Blessings, Mya`;
       `).run(
         'default',
         systemPrompt,
-        'meta-llama/llama-3.1-8b-instruct:free',
+        'openai/gpt-4o-mini',
         0.7,
         1.0,
         Math.floor(Date.now() / 1000)
