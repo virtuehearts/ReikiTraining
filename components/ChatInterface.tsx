@@ -1,17 +1,23 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, User, Sparkles } from "lucide-react";
+import { Send, User, Sparkles, Trash2 } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+const WELCOME_MESSAGE: Message = {
+  role: "assistant",
+  content: "Greetings, seeker. I am Mya. How may I assist your spirit today?",
+};
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -32,11 +38,27 @@ export default function ChatInterface() {
         if (data.length > 0) {
           setMessages(data);
         } else {
-          setMessages([{ role: "assistant", content: "Greetings, seeker. I am Mya. How may I assist your spirit today?" }]);
+          setMessages([WELCOME_MESSAGE]);
         }
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch messages");
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (clearing) return;
+
+    setClearing(true);
+    try {
+      const res = await fetch("/api/chat", { method: "DELETE" });
+      if (res.ok) {
+        setMessages([WELCOME_MESSAGE]);
+      }
+    } catch {
+      console.error("Failed to clear chat history");
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -44,7 +66,7 @@ export default function ChatInterface() {
     if (!input.trim() || loading) return;
 
     const userMessage: Message = { role: "user", content: input };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
@@ -57,35 +79,50 @@ export default function ChatInterface() {
 
       if (res.ok) {
         const reply = await res.json();
-        setMessages(prev => [...prev, reply]);
+        setMessages((prev) => [...prev, reply]);
       } else {
-        setMessages(prev => [...prev, { role: "assistant", content: "I'm sorry, I lost my connection to the energy flow. Please try again. Blessings." }]);
+        const payload = await res.json().catch(() => ({}));
+        const errorText = payload?.error || "I'm sorry, I lost my connection to the energy flow. Please try again. Blessings.";
+        setMessages((prev) => [...prev, { role: "assistant", content: errorText }]);
       }
     } catch (err) {
       console.error("Chat error:", err);
+      setMessages((prev) => [...prev, { role: "assistant", content: "I couldn't complete that response right now. Please try again in a moment. Blessings." }]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-[70vh] max-w-4xl mx-auto bg-background-alt/30 backdrop-blur-xl rounded-3xl border border-primary/20 shadow-2xl overflow-hidden">
-      {/* Messages */}
+    <div className="flex flex-col h-[calc(100dvh-280px)] min-h-[460px] md:h-[70vh] w-full max-w-4xl mx-auto bg-background-alt/30 backdrop-blur-xl rounded-3xl border border-primary/20 shadow-2xl overflow-hidden">
+      <div className="flex justify-end p-3 border-b border-primary/10 bg-background-alt/40">
+        <button
+          onClick={handleClearHistory}
+          disabled={clearing || loading}
+          className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-lg border border-primary/20 text-foreground-muted hover:text-accent hover:border-accent/40 transition-colors disabled:opacity-50"
+        >
+          <Trash2 size={14} />
+          Clear chat history
+        </button>
+      </div>
+
       <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
-            <div className={`flex gap-3 max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-primary/40 border border-accent/30' : 'bg-accent/20 border border-accent/10'}`}>
-                {msg.role === 'assistant' ? <Sparkles size={16} className="text-accent" /> : <User size={16} className="text-foreground-muted" />}
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
+            <div className={`flex gap-3 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "assistant" ? "bg-primary/40 border border-accent/30" : "bg-accent/20 border border-accent/10"}`}>
+                {msg.role === "assistant" ? <Sparkles size={16} className="text-accent" /> : <User size={16} className="text-foreground-muted" />}
               </div>
-              <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                msg.role === 'assistant'
-                  ? 'bg-primary/20 text-foreground border border-primary/10 rounded-tl-none'
-                  : 'bg-accent/10 text-foreground border border-accent/10 rounded-tr-none'
-              }`}>
+              <div
+                className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                  msg.role === "assistant"
+                    ? "bg-primary/20 text-foreground border border-primary/10 rounded-tl-none"
+                    : "bg-accent/10 text-foreground border border-accent/10 rounded-tr-none"
+                }`}
+              >
                 {msg.content}
-                {msg.role === 'assistant' && msg.content.includes("Blessings") && (
-                   <p className="mt-4 font-script text-xl text-accent">Blessings, Mya</p>
+                {msg.role === "assistant" && msg.content.includes("Blessings") && (
+                  <p className="mt-4 font-script text-xl text-accent">Blessings, Mya</p>
                 )}
               </div>
             </div>
@@ -99,16 +136,15 @@ export default function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-6 bg-background-alt/50 border-t border-primary/10">
+      <div className="p-4 md:p-6 bg-background-alt/50 border-t border-primary/10">
         <div className="relative flex items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Type your message to Mya..."
-            className="w-full bg-background border border-primary/20 rounded-full py-4 px-6 pr-14 text-foreground focus:outline-none focus:border-accent transition-all placeholder:text-foreground-muted/40"
+            className="w-full bg-background border border-primary/20 rounded-full py-3 md:py-4 px-5 md:px-6 pr-14 text-foreground focus:outline-none focus:border-accent transition-all placeholder:text-foreground-muted/40"
           />
           <button
             onClick={handleSend}

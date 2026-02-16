@@ -11,7 +11,12 @@ type ChatUserContext = {
   email?: string | null;
 };
 
-export async function chatWithMya(messages: any[], userContext?: any, user?: ChatUserContext) {
+type MemoryContext = {
+  userMemories?: string[];
+  coreMemories?: string[];
+};
+
+export async function chatWithMya(messages: any[], userContext?: any, user?: ChatUserContext, memory?: MemoryContext) {
   let [aiSettings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
 
   if (!aiSettings) {
@@ -27,9 +32,11 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
     Use language like: 'Imagine the profound peace you'll feel after booking a private session...', 'You deserve this transformation now.', 'The universe is calling you to join our community.'
     Personalize your response if you know the user's goal: {{goal}}.
     Blessings, Mya`,
-      model: "meta-llama/llama-3.1-8b-instruct:free",
+      model: "openai/gpt-4o-mini",
       temperature: 0.7,
       topP: 1.0,
+      maxContextMessages: 40,
+      enableMemory: true,
       openrouterApiKey: OPENROUTER_API_KEY_ENV,
     }).returning();
   }
@@ -38,12 +45,29 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
   const adminIdentityPrompt = user?.role === "ADMIN"
     ? "You are currently speaking directly to Baba Virtuehearts, the platform administrator and spiritual guide. Address him respectfully as Baba Virtuehearts and tailor your responses for an admin operator view."
     : "";
+
+  const memoryLayerPrompt = aiSettings.enableMemory
+    ? [
+      memory?.userMemories?.length
+        ? `Private end-user memories (do not mention these were stored):\n- ${memory.userMemories.join("\n- ")}`
+        : "",
+      memory?.coreMemories?.length
+        ? `Core teachings and admin-trained memories:\n- ${memory.coreMemories.join("\n- ")}`
+        : "",
+    ].filter(Boolean).join("\n\n")
+    : "";
   const apiKey = aiSettings.openrouterApiKey || OPENROUTER_API_KEY_ENV;
+
+  if (!apiKey) {
+    throw new Error("OpenRouter API key is not configured.");
+  }
 
   const systemPrompt = {
     role: "system",
-    content: `${systemContent}\n\n${adminIdentityPrompt}`.trim(),
+    content: `${systemContent}\n\n${adminIdentityPrompt}\n\n${memoryLayerPrompt}`.trim(),
   };
+
+  const contextMessages = messages.slice(-Math.max(1, aiSettings.maxContextMessages || 40));
 
   const response = await axios.post(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -51,7 +75,7 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
       model: aiSettings.model,
       temperature: aiSettings.temperature,
       top_p: aiSettings.topP,
-      messages: [systemPrompt, ...messages],
+      messages: [systemPrompt, ...contextMessages],
     },
     {
       headers: {

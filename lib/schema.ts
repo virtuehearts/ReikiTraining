@@ -17,9 +17,11 @@ export const users = sqliteTable('user', {
 export const aiSettings = sqliteTable('aiSettings', {
   id: text('id').primaryKey().default('default'),
   systemPrompt: text('systemPrompt').notNull(),
-  model: text('model').default('meta-llama/llama-3.1-8b-instruct:free').notNull(),
+  model: text('model').default('openai/gpt-4o-mini').notNull(),
   temperature: real('temperature').default(0.7).notNull(),
   topP: real('topP').default(1.0).notNull(),
+  maxContextMessages: integer('maxContextMessages').default(40).notNull(),
+  enableMemory: integer('enableMemory', { mode: 'boolean' }).default(true).notNull(),
   openrouterApiKey: text('openrouterApiKey'),
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
@@ -30,6 +32,23 @@ export const chatMessages = sqliteTable('chatMessage', {
   role: text('role').notNull(), // user, assistant
   content: text('content').notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
+export const userMemories = sqliteTable('userMemory', {
+  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  memory: text('memory').notNull(),
+  source: text('source').default('chat').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
+export const coreMemories = sqliteTable('coreMemory', {
+  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  memory: text('memory').notNull(),
+  sourceUserId: text('sourceUserId').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 export const messages = sqliteTable('message', {
@@ -78,6 +97,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   progress: many(progress),
   reflections: many(reflections),
   chatMessages: many(chatMessages),
+  userMemories: many(userMemories),
+  authoredCoreMemories: many(coreMemories),
   sentMessages: many(messages, { relationName: 'sentMessages' }),
   receivedMessages: many(messages, { relationName: 'receivedMessages' }),
 }));
@@ -85,6 +106,20 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   user: one(users, {
     fields: [chatMessages.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userMemoriesRelations = relations(userMemories, ({ one }) => ({
+  user: one(users, {
+    fields: [userMemories.userId],
+    references: [users.id],
+  }),
+}));
+
+export const coreMemoriesRelations = relations(coreMemories, ({ one }) => ({
+  sourceUser: one(users, {
+    fields: [coreMemories.sourceUserId],
     references: [users.id],
   }),
 }));

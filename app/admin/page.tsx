@@ -37,7 +37,15 @@ interface AISettings {
   model: string;
   temperature: number;
   topP: number;
+  maxContextMessages: number;
+  enableMemory: boolean;
   openrouterApiKey?: string;
+}
+
+interface CoreMemory {
+  id: string;
+  memory: string;
+  updatedAt: string;
 }
 
 interface Message {
@@ -61,8 +69,11 @@ export default function AdminPage() {
     model: "",
     temperature: 0.7,
     topP: 1.0,
+    maxContextMessages: 40,
+    enableMemory: true,
     openrouterApiKey: "",
   });
+  const [coreMemories, setCoreMemories] = useState<CoreMemory[]>([]);
   const [newPassword, setNewPassword] = useState("");
   const [messageSummaries, setMessageSummaries] = useState<Message[]>([]);
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
@@ -80,7 +91,10 @@ export default function AdminPage() {
 
     fetchUsers();
     fetchMessages();
-    if (activeTab === "ai") fetchAISettings();
+    if (activeTab === "ai") {
+      fetchAISettings();
+      fetchCoreMemories();
+    }
   }, [session, status, router, activeTab]);
 
   useEffect(() => {
@@ -112,6 +126,19 @@ export default function AdminPage() {
       }
     } catch {
       console.error("Failed to fetch AI settings");
+    }
+  };
+
+
+  const fetchCoreMemories = async () => {
+    try {
+      const res = await fetch("/api/admin/memories");
+      if (res.ok) {
+        const data = await res.json();
+        setCoreMemories(data);
+      }
+    } catch {
+      console.error("Failed to fetch core memories");
     }
   };
 
@@ -185,6 +212,23 @@ export default function AdminPage() {
       }
     } catch {
       alert("Failed to send reply");
+    }
+  };
+
+
+  const handleDeleteCoreMemory = async (memoryId: string) => {
+    try {
+      const res = await fetch("/api/admin/memories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: memoryId }),
+      });
+
+      if (res.ok) {
+        setCoreMemories((prev) => prev.filter((item) => item.id !== memoryId));
+      }
+    } catch {
+      alert("Failed to delete core memory");
     }
   };
 
@@ -438,75 +482,125 @@ export default function AdminPage() {
             )}
 
             {activeTab === "ai" && (
-              <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6 max-w-4xl mx-auto">
-                <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">Mya AI Configuration</h2>
-                <p className="text-sm text-foreground-muted">Configure OpenRouter model selection, temperature, top-p, and system prompt behavior for all users. Admin chat sessions automatically identify you as Baba Virtuehearts.</p>
+              <div className="space-y-6 max-w-5xl mx-auto">
+                <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6">
+                  <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">Mya AI Configuration</h2>
+                  <p className="text-sm text-foreground-muted">Configure OpenRouter model selection, context window, memory usage, and system prompt behavior. End users never see memory internals.</p>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground-muted">System Prompt</label>
-                    <textarea
-                      value={aiSettings.systemPrompt}
-                      onChange={(e) => setAiSettings({ ...aiSettings, systemPrompt: e.target.value })}
-                      className="w-full h-64 bg-background border border-primary/20 rounded-xl p-4 text-sm focus:border-accent outline-none"
-                      placeholder="Define Mya's personality and rules..."
-                    />
-                    <p className="text-[10px] text-foreground-muted">Use {"{{goal}}"} as a placeholder for each user&apos;s intake goal.</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground-muted">OpenRouter API Key</label>
-                    <input
-                      type="password"
-                      value={aiSettings.openrouterApiKey || ""}
-                      onChange={(e) => setAiSettings({ ...aiSettings, openrouterApiKey: e.target.value })}
-                      className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
-                      placeholder="sk-or-v1-..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-semibold text-foreground-muted">OpenRouter Model</label>
-                      <input
-                        type="text"
-                        value={aiSettings.model}
-                        onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
-                        className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
-                        placeholder="e.g. openai/gpt-4o-mini"
-                      />
-                    </div>
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground-muted">Top P</label>
+                      <label className="text-sm font-semibold text-foreground-muted">System Prompt</label>
+                      <textarea
+                        value={aiSettings.systemPrompt}
+                        onChange={(e) => setAiSettings({ ...aiSettings, systemPrompt: e.target.value })}
+                        className="w-full h-64 bg-background border border-primary/20 rounded-xl p-4 text-sm focus:border-accent outline-none"
+                        placeholder="Define Mya's personality and rules..."
+                      />
+                      <p className="text-[10px] text-foreground-muted">Use {"{{goal}}"} as a placeholder for each user&apos;s intake goal.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground-muted">OpenRouter API Key</label>
                       <input
-                        type="number"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={aiSettings.topP}
-                        onChange={(e) => setAiSettings({ ...aiSettings, topP: parseFloat(e.target.value) || 1 })}
+                        type="password"
+                        value={aiSettings.openrouterApiKey || ""}
+                        onChange={(e) => setAiSettings({ ...aiSettings, openrouterApiKey: e.target.value })}
                         className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                        placeholder="sk-or-v1-..."
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-sm font-semibold text-foreground-muted">OpenRouter Model</label>
+                        <input
+                          type="text"
+                          value={aiSettings.model}
+                          onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
+                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                          placeholder="e.g. openai/gpt-4o-mini"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground-muted">Top P</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={aiSettings.topP}
+                          onChange={(e) => setAiSettings({ ...aiSettings, topP: parseFloat(e.target.value) || 1 })}
+                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground-muted">Context Messages</label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="120"
+                          value={aiSettings.maxContextMessages}
+                          onChange={(e) => setAiSettings({ ...aiSettings, maxContextMessages: parseInt(e.target.value, 10) || 40 })}
+                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                        />
+                      </div>
+                      <label className="flex items-center gap-3 text-sm text-foreground-muted mt-8">
+                        <input
+                          type="checkbox"
+                          checked={aiSettings.enableMemory}
+                          onChange={(e) => setAiSettings({ ...aiSettings, enableMemory: e.target.checked })}
+                          className="size-4 accent-accent"
+                        />
+                        Enable hidden memory layer
+                      </label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground-muted">Temperature ({aiSettings.temperature})</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={aiSettings.temperature}
+                        onChange={(e) => setAiSettings({ ...aiSettings, temperature: parseFloat(e.target.value) })}
+                        className="w-full accent-accent"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground-muted">Temperature ({aiSettings.temperature})</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="2"
-                      step="0.1"
-                      value={aiSettings.temperature}
-                      onChange={(e) => setAiSettings({ ...aiSettings, temperature: parseFloat(e.target.value) })}
-                      className="w-full accent-accent"
-                    />
-                  </div>
+                  <button onClick={handleAISave} className="w-full bg-accent text-background font-bold py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-accent/20">
+                    Save Mya AI Settings
+                  </button>
                 </div>
 
-                <button onClick={handleAISave} className="w-full bg-accent text-background font-bold py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-accent/20">
-                  Save Mya AI Settings
-                </button>
+                <div className="bg-background-alt p-6 rounded-2xl border border-primary/20 shadow-xl space-y-4">
+                  <h3 className="text-xl font-serif text-accent">Core Memory Bank (admin trained)</h3>
+                  <p className="text-xs text-foreground-muted">Core memories are learned when you chat with Mya as admin. End users never see this layer.</p>
+                  <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+                    {coreMemories.length === 0 ? (
+                      <p className="text-sm text-foreground-muted">No core memories yet. Talk to Mya from the admin account to seed them.</p>
+                    ) : (
+                      coreMemories.map((memory) => (
+                        <div key={memory.id} className="flex items-start justify-between gap-3 bg-background border border-primary/10 rounded-xl p-3">
+                          <div>
+                            <p className="text-sm text-foreground">{memory.memory}</p>
+                            <p className="text-[10px] text-foreground-muted mt-1">Updated {formatDate(memory.updatedAt)}</p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteCoreMemory(memory.id)}
+                            className="text-xs px-2 py-1 rounded border border-red-500/40 text-red-300 hover:bg-red-500/10"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

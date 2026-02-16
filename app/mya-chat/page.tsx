@@ -21,8 +21,8 @@ export default function MyaChatPage() {
         <div className="w-24" />
       </header>
 
-      <main className="flex-grow flex flex-col items-center justify-center p-6 md:p-12 space-y-8">
-        <div className="text-center max-w-2xl">
+      <main className="flex-grow flex flex-col items-center justify-start p-4 md:p-8 space-y-6">
+        <div className="text-center max-w-2xl pt-2 md:pt-4">
           <h2 className="text-3xl font-serif mb-4">A Sacred Dialogue</h2>
           <p className="text-foreground-muted italic">
             &quot;Mya is here to guide you through the energies of the day. Seek her wisdom when your path feels unclear.&quot;
