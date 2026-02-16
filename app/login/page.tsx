@@ -5,6 +5,27 @@ import { signIn, getProviders } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
+const getSafeCallbackUrl = (rawCallbackUrl: string | null) => {
+  if (!rawCallbackUrl) {
+    return "/dashboard";
+  }
+
+  if (rawCallbackUrl.startsWith("/")) {
+    return rawCallbackUrl;
+  }
+
+  if (typeof window !== "undefined") {
+    const parsed = new URL(rawCallbackUrl, window.location.origin);
+    const isLocalPath = parsed.origin === window.location.origin;
+
+    if (isLocalPath) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  }
+
+  return "/dashboard";
+};
+
 function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,7 +34,7 @@ function LoginContent() {
   const [providers, setProviders] = useState<any>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"));
   const isAdminLogin = callbackUrl.includes("/admin");
 
   useEffect(() => {
