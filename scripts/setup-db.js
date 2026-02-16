@@ -49,7 +49,7 @@ Blessings, Mya`;
       `).run(
         'default',
         systemPrompt,
-        'openai/gpt-4o-mini',
+        'nvidia/nemotron-3-nano-30b-a3b:free',
         0.7,
         1.0,
         Math.floor(Date.now() / 1000)

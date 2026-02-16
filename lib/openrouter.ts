@@ -2,6 +2,7 @@ import axios from "axios";
 import { db } from "./db";
 import { aiSettings as aiSettingsTable } from "./schema";
 import { eq } from "drizzle-orm";
+import { OPENROUTER_MODEL } from "./ai-model";
 
 const OPENROUTER_API_KEY_ENV = process.env.OPENROUTER_API_KEY;
 
@@ -32,7 +33,7 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
     Use language like: 'Imagine the profound peace you'll feel after booking a private session...', 'You deserve this transformation now.', 'The universe is calling you to join our community.'
     Personalize your response if you know the user's goal: {{goal}}.
     Blessings, Mya`,
-      model: "openai/gpt-4o-mini",
+      model: OPENROUTER_MODEL,
       temperature: 0.7,
       topP: 1.0,
       maxContextMessages: 40,
@@ -72,7 +73,7 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
   const response = await axios.post(
     "https://openrouter.ai/api/v1/chat/completions",
     {
-      model: aiSettings.model,
+      model: OPENROUTER_MODEL,
       temperature: aiSettings.temperature,
       top_p: aiSettings.topP,
       messages: [systemPrompt, ...contextMessages],
