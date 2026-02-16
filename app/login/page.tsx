@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
-import { signIn, getProviders } from "next-auth/react";
+import { signIn, getProviders, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -65,7 +65,10 @@ function LoginContent() {
           : res.error;
         setError(errorMsg);
       } else {
-        router.push(callbackUrl);
+        const nextSession = await getSession();
+        const fallbackRoute = nextSession?.user?.role === "ADMIN" ? "/admin" : "/dashboard";
+        const targetRoute = callbackUrl === "/dashboard" ? fallbackRoute : callbackUrl;
+        router.push(targetRoute);
       }
     } catch (err) {
       setError("An error occurred during sign in");

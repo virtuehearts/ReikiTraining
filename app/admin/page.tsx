@@ -1,9 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Users, Settings, MessageSquare, Send, CheckCircle, XCircle, Shield } from "lucide-react";
+import {
+  Users,
+  Settings,
+  MessageSquare,
+  Send,
+  CheckCircle,
+  XCircle,
+  Shield,
+  UserCheck,
+  CalendarClock,
+  Ban,
+  Sparkles,
+} from "lucide-react";
 
 interface User {
   id: string;
@@ -12,7 +24,12 @@ interface User {
   status: string;
   role: string;
   createdAt: string;
-  intake: any;
+  intake: {
+    age?: number;
+    experience?: string;
+    goal?: string;
+    healthConcerns?: string;
+  } | null;
 }
 
 interface AISettings {
@@ -33,6 +50,8 @@ interface Message {
   sender?: User;
 }
 
+const formatDate = (value: string) => new Date(value).toLocaleString();
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -45,23 +64,29 @@ export default function AdminPage() {
     openrouterApiKey: "",
   });
   const [newPassword, setNewPassword] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageSummaries, setMessageSummaries] = useState<Message[]>([]);
+  const [threadMessages, setThreadMessages] = useState<Message[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "loading") return;
-
     if (!session || session.user.role !== "ADMIN") {
       router.push("/dashboard");
       return;
     }
 
-    if (activeTab === "users") fetchUsers();
+    fetchUsers();
+    fetchMessages();
     if (activeTab === "ai") fetchAISettings();
-    if (activeTab === "messages") fetchMessages();
   }, [session, status, router, activeTab]);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+    fetchThread(selectedUserId);
+  }, [selectedUserId]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -71,7 +96,7 @@ export default function AdminPage() {
         const data = await res.json();
         setUsers(data);
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch users");
     } finally {
       setLoading(false);
@@ -79,32 +104,38 @@ export default function AdminPage() {
   };
 
   const fetchAISettings = async () => {
-    setLoading(true);
     try {
       const res = await fetch("/api/admin/ai-settings");
       if (res.ok) {
         const data = await res.json();
         if (data) setAiSettings(data);
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch AI settings");
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchMessages = async () => {
-    setLoading(true);
     try {
       const res = await fetch("/api/messages");
       if (res.ok) {
         const data = await res.json();
-        setMessages(data);
+        setMessageSummaries(data);
       }
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch messages");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchThread = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/messages?userId=${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setThreadMessages(data);
+      }
+    } catch {
+      console.error("Failed to fetch thread");
     }
   };
 
@@ -117,9 +148,9 @@ export default function AdminPage() {
       });
 
       if (res.ok) {
-        setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u)));
       }
-    } catch (err) {
+    } catch {
       alert("Failed to update status");
     }
   };
@@ -131,15 +162,13 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(aiSettings),
       });
-      if (res.ok) {
-        alert("AI Settings updated successfully");
-      }
-    } catch (err) {
+      if (res.ok) alert("AI Settings updated successfully");
+    } catch {
       alert("Failed to update AI settings");
     }
   };
 
-  const handleReply = async (userId: string) => {
+  const handleReply = async (userId: string, isBookingReply = false) => {
     const content = replyContent[userId];
     if (!content?.trim()) return;
 
@@ -147,13 +176,14 @@ export default function AdminPage() {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, receiverId: userId }),
+        body: JSON.stringify({ content, receiverId: userId, isBooking: isBookingReply }),
       });
       if (res.ok) {
-        setReplyContent({ ...replyContent, [userId]: "" });
-        alert("Reply sent");
+        setReplyContent((prev) => ({ ...prev, [userId]: "" }));
+        fetchMessages();
+        fetchThread(userId);
       }
-    } catch (err) {
+    } catch {
       alert("Failed to send reply");
     }
   };
@@ -177,10 +207,21 @@ export default function AdminPage() {
         const data = await res.json();
         alert(data.error || "Failed to update password");
       }
-    } catch (err) {
+    } catch {
       alert("Failed to update password");
     }
   };
+
+  const pendingUsers = useMemo(() => users.filter((u) => u.status === "PENDING"), [users]);
+  const bookingRequests = useMemo(() => messageSummaries.filter((m) => m.isBooking), [messageSummaries]);
+  const uniqueThreads = useMemo(() => {
+    const seen = new Set<string>();
+    return messageSummaries.filter((msg) => {
+      if (seen.has(msg.senderId)) return false;
+      seen.add(msg.senderId);
+      return true;
+    });
+  }, [messageSummaries]);
 
   if (status === "loading" || !session || session.user.role !== "ADMIN") {
     return <div className="min-h-screen bg-background flex items-center justify-center text-accent">Channeling Admin Sanctuary...</div>;
@@ -188,45 +229,58 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-12">
-          <h1 className="text-4xl font-serif text-accent">Admin Sanctuary</h1>
-          <div className="flex bg-background-alt p-1 rounded-xl border border-primary/20">
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'users' ? 'bg-primary text-white shadow-lg' : 'text-foreground-muted hover:text-accent'}`}
-            >
-              <Users size={18} />
-              <span>Users</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("ai")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'ai' ? 'bg-primary text-white shadow-lg' : 'text-foreground-muted hover:text-accent'}`}
-            >
-              <Settings size={18} />
-              <span>AI Mya</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("messages")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'messages' ? 'bg-primary text-white shadow-lg' : 'text-foreground-muted hover:text-accent'}`}
-            >
-              <MessageSquare size={18} />
-              <span>Messages</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("system")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'system' ? 'bg-primary text-white shadow-lg' : 'text-foreground-muted hover:text-accent'}`}
-            >
-              <Shield size={18} />
-              <span>System</span>
-            </button>
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-wrap justify-between items-center gap-6 mb-10">
+          <div>
+            <h1 className="text-4xl font-serif text-accent">Admin Operations Panel</h1>
+            <p className="text-foreground-muted mt-2">Manage users, registrations, booking requests, and Mya AI controls separately from disciple experience.</p>
+          </div>
+          <div className="flex flex-wrap bg-background-alt p-1 rounded-xl border border-primary/20">
+            {[
+              { tab: "overview", icon: <Sparkles size={18} />, label: "Overview" },
+              { tab: "users", icon: <Users size={18} />, label: "Users" },
+              { tab: "registrations", icon: <UserCheck size={18} />, label: "Registrations" },
+              { tab: "messages", icon: <MessageSquare size={18} />, label: "Messages" },
+              { tab: "ai", icon: <Settings size={18} />, label: "Mya AI" },
+              { tab: "system", icon: <Shield size={18} />, label: "System" },
+            ].map(({ tab, icon, label }) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === tab ? "bg-primary text-white shadow-lg" : "text-foreground-muted hover:text-accent"}`}
+              >
+                {icon}
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
         </header>
 
         {loading ? (
           <div className="flex items-center justify-center h-64 text-accent animate-pulse">Channeling data...</div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            {activeTab === "overview" && (
+              <div className="grid md:grid-cols-4 gap-4">
+                <div className="bg-background-alt p-5 rounded-2xl border border-primary/20">
+                  <p className="text-sm text-foreground-muted">Total Users</p>
+                  <p className="text-3xl text-accent font-semibold">{users.length}</p>
+                </div>
+                <div className="bg-background-alt p-5 rounded-2xl border border-primary/20">
+                  <p className="text-sm text-foreground-muted">Pending Registrations</p>
+                  <p className="text-3xl text-yellow-400 font-semibold">{pendingUsers.length}</p>
+                </div>
+                <div className="bg-background-alt p-5 rounded-2xl border border-primary/20">
+                  <p className="text-sm text-foreground-muted">Booking Requests</p>
+                  <p className="text-3xl text-accent font-semibold">{bookingRequests.length}</p>
+                </div>
+                <div className="bg-background-alt p-5 rounded-2xl border border-primary/20">
+                  <p className="text-sm text-foreground-muted">Disabled Accounts</p>
+                  <p className="text-3xl text-red-400 font-semibold">{users.filter((u) => u.status === "DISABLED").length}</p>
+                </div>
+              </div>
+            )}
+
             {activeTab === "users" && (
               <div className="overflow-x-auto bg-background-alt rounded-2xl border border-primary/20 shadow-xl">
                 <table className="w-full text-left border-collapse">
@@ -235,7 +289,7 @@ export default function AdminPage() {
                       <th className="p-4 text-accent font-semibold">Name</th>
                       <th className="p-4 text-accent font-semibold">Email</th>
                       <th className="p-4 text-accent font-semibold">Status</th>
-                      <th className="p-4 text-accent font-semibold">Intake Data</th>
+                      <th className="p-4 text-accent font-semibold">Registered</th>
                       <th className="p-4 text-accent font-semibold">Actions</th>
                     </tr>
                   </thead>
@@ -245,40 +299,34 @@ export default function AdminPage() {
                         <td className="p-4 text-foreground">{user.name || "N/A"}</td>
                         <td className="p-4 text-foreground-muted">{user.email}</td>
                         <td className="p-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            user.status === 'APPROVED' ? 'bg-green-500/20 text-green-400' :
-                            user.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              user.status === "APPROVED"
+                                ? "bg-green-500/20 text-green-400"
+                                : user.status === "PENDING"
+                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  : user.status === "DISABLED"
+                                    ? "bg-red-500/20 text-red-400"
+                                    : "bg-orange-500/20 text-orange-400"
+                            }`}
+                          >
                             {user.status}
                           </span>
                         </td>
-                        <td className="p-4 text-sm text-foreground-muted">
-                          {user.intake ? (
-                            <details className="cursor-pointer">
-                              <summary className="text-accent hover:underline">View Intake</summary>
-                              <div className="mt-2 p-3 bg-background rounded-xl border border-primary/10 text-xs space-y-1">
-                                <p><span className="text-accent/60">Age:</span> {user.intake.age}</p>
-                                <p><span className="text-accent/60">Experience:</span> {user.intake.experience}</p>
-                                <p><span className="text-accent/60">Goal:</span> {user.intake.goal}</p>
-                                <p><span className="text-accent/60">Health:</span> {user.intake.healthConcerns}</p>
-                              </div>
-                            </details>
-                          ) : "No intake yet"}
-                        </td>
+                        <td className="p-4 text-sm text-foreground-muted">{formatDate(user.createdAt)}</td>
                         <td className="p-4 space-x-2">
-                          {user.status === "PENDING" ? (
-                            <>
-                              <button onClick={() => handleStatusChange(user.id, "APPROVED")} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors" title="Approve">
-                                <CheckCircle size={18} />
-                              </button>
-                              <button onClick={() => handleStatusChange(user.id, "REJECTED")} className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors" title="Reject">
-                                <XCircle size={18} />
-                              </button>
-                            </>
+                          {user.status !== "APPROVED" ? (
+                            <button onClick={() => handleStatusChange(user.id, "APPROVED")} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors" title="Activate account">
+                              <CheckCircle size={18} />
+                            </button>
                           ) : (
-                            <button onClick={() => handleStatusChange(user.id, "PENDING")} className="text-xs text-foreground-muted hover:text-accent">
-                              Reset Status
+                            <button onClick={() => handleStatusChange(user.id, "DISABLED")} className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors" title="Disable account">
+                              <Ban size={18} />
+                            </button>
+                          )}
+                          {user.status === "PENDING" && (
+                            <button onClick={() => handleStatusChange(user.id, "REJECTED")} className="bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg transition-colors" title="Reject">
+                              <XCircle size={18} />
                             </button>
                           )}
                         </td>
@@ -289,118 +337,176 @@ export default function AdminPage() {
               </div>
             )}
 
+            {activeTab === "registrations" && (
+              <div className="grid gap-4">
+                {pendingUsers.length === 0 ? (
+                  <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 text-center text-foreground-muted">No pending registrations right now.</div>
+                ) : (
+                  pendingUsers.map((user) => (
+                    <div key={user.id} className="bg-background-alt p-6 rounded-2xl border border-primary/20 shadow-lg">
+                      <div className="flex flex-wrap justify-between gap-4">
+                        <div>
+                          <h3 className="text-xl font-semibold text-foreground">{user.name || "Unnamed user"}</h3>
+                          <p className="text-foreground-muted">{user.email}</p>
+                          <p className="text-xs text-foreground-muted mt-1">Registered {formatDate(user.createdAt)}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleStatusChange(user.id, "APPROVED")} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                            <CheckCircle size={16} /> Approve
+                          </button>
+                          <button onClick={() => handleStatusChange(user.id, "REJECTED")} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                            <XCircle size={16} /> Reject
+                          </button>
+                        </div>
+                      </div>
+                      {user.intake ? (
+                        <div className="mt-4 p-4 bg-background rounded-xl border border-primary/10 text-sm space-y-1">
+                          <p><span className="text-accent/70">Goal:</span> {user.intake.goal || "Not provided"}</p>
+                          <p><span className="text-accent/70">Experience:</span> {user.intake.experience || "Not provided"}</p>
+                          <p><span className="text-accent/70">Health concerns:</span> {user.intake.healthConcerns || "Not provided"}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-foreground-muted mt-4">No intake submitted yet.</p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === "messages" && (
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="bg-background-alt rounded-2xl border border-primary/20 p-4 space-y-3">
+                  <h3 className="font-semibold text-accent">Inbox Threads</h3>
+                  {uniqueThreads.length === 0 && <p className="text-sm text-foreground-muted">No messages yet.</p>}
+                  {uniqueThreads.map((msg) => (
+                    <button
+                      key={msg.id}
+                      onClick={() => setSelectedUserId(msg.senderId)}
+                      className={`w-full text-left p-3 rounded-xl border transition ${selectedUserId === msg.senderId ? "border-accent bg-accent/10" : "border-primary/10 hover:border-primary/30"}`}
+                    >
+                      <p className="font-medium text-foreground">{msg.sender?.name || "Unknown user"}</p>
+                      <p className="text-xs text-foreground-muted truncate">{msg.content}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="lg:col-span-2 bg-background-alt rounded-2xl border border-primary/20 p-4 space-y-4">
+                  <h3 className="font-semibold text-accent">Conversation</h3>
+                  {!selectedUserId ? (
+                    <p className="text-foreground-muted">Select a user thread to view full conversation and reply.</p>
+                  ) : (
+                    <>
+                      <div className="max-h-80 overflow-y-auto space-y-3">
+                        {threadMessages.map((msg) => (
+                          <div key={msg.id} className={`p-3 rounded-xl border ${msg.senderId === selectedUserId ? "bg-background border-primary/20" : "bg-primary/10 border-primary/30"}`}>
+                            <p className="text-sm text-foreground">{msg.content}</p>
+                            <p className="text-[10px] text-foreground-muted mt-1">{formatDate(msg.createdAt)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={replyContent[selectedUserId] || ""}
+                          onChange={(e) => setReplyContent((prev) => ({ ...prev, [selectedUserId]: e.target.value }))}
+                          placeholder="Type your response..."
+                          className="flex-grow bg-background border border-primary/20 rounded-xl px-4 py-2 text-sm focus:border-accent outline-none"
+                        />
+                        <button onClick={() => handleReply(selectedUserId)} className="bg-primary hover:bg-primary-light text-white p-2 rounded-xl transition-all">
+                          <Send size={18} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="lg:col-span-3 bg-background-alt rounded-2xl border border-primary/20 p-4 space-y-3">
+                  <h3 className="font-semibold text-accent flex items-center gap-2"><CalendarClock size={18} /> Booking Requests</h3>
+                  {bookingRequests.length === 0 ? (
+                    <p className="text-sm text-foreground-muted">No booking requests submitted yet.</p>
+                  ) : (
+                    bookingRequests.map((msg) => (
+                      <div key={msg.id} className="p-4 border border-primary/10 rounded-xl">
+                        <p className="text-sm text-foreground">{msg.content}</p>
+                        <p className="text-xs text-foreground-muted mt-1">From {msg.sender?.name || msg.sender?.email || "Unknown user"} • {formatDate(msg.createdAt)}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {activeTab === "ai" && (
-              <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6 max-w-3xl mx-auto">
+              <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6 max-w-4xl mx-auto">
                 <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">Mya AI Configuration</h2>
+                <p className="text-sm text-foreground-muted">Configure OpenRouter model selection, temperature, top-p, and system prompt behavior for all users. Admin chat sessions automatically identify you as Baba Virtuehearts.</p>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground-muted">System Prompt</label>
                     <textarea
                       value={aiSettings.systemPrompt}
-                      onChange={(e) => setAiSettings({...aiSettings, systemPrompt: e.target.value})}
+                      onChange={(e) => setAiSettings({ ...aiSettings, systemPrompt: e.target.value })}
                       className="w-full h-64 bg-background border border-primary/20 rounded-xl p-4 text-sm focus:border-accent outline-none"
-                      placeholder="Define Mya&apos;s personality and rules..."
+                      placeholder="Define Mya's personality and rules..."
                     />
-                    <p className="text-[10px] text-foreground-muted">Use {"{{goal}}"} as a placeholder for the user&apos;s intake goal.</p>
+                    <p className="text-[10px] text-foreground-muted">Use {"{{goal}}"} as a placeholder for each user&apos;s intake goal.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground-muted">OpenRouter API Key</label>
-                      <input
-                        type="password"
-                        value={aiSettings.openrouterApiKey || ""}
-                        onChange={(e) => setAiSettings({...aiSettings, openrouterApiKey: e.target.value})}
-                        className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
-                        placeholder="sk-or-v1-..."
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground-muted">OpenRouter API Key</label>
+                    <input
+                      type="password"
+                      value={aiSettings.openrouterApiKey || ""}
+                      onChange={(e) => setAiSettings({ ...aiSettings, openrouterApiKey: e.target.value })}
+                      className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                      placeholder="sk-or-v1-..."
+                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2 md:col-span-2">
                       <label className="text-sm font-semibold text-foreground-muted">OpenRouter Model</label>
                       <input
                         type="text"
                         value={aiSettings.model}
-                        onChange={(e) => setAiSettings({...aiSettings, model: e.target.value})}
+                        onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
                         className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                        placeholder="e.g. openai/gpt-4o-mini"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground-muted">Temperature ({aiSettings.temperature})</label>
+                      <label className="text-sm font-semibold text-foreground-muted">Top P</label>
                       <input
-                        type="range" min="0" max="2" step="0.1"
-                        value={aiSettings.temperature}
-                        onChange={(e) => setAiSettings({...aiSettings, temperature: parseFloat(e.target.value)})}
-                        className="w-full accent-accent"
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={aiSettings.topP}
+                        onChange={(e) => setAiSettings({ ...aiSettings, topP: parseFloat(e.target.value) || 1 })}
+                        className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground-muted">Temperature ({aiSettings.temperature})</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value={aiSettings.temperature}
+                      onChange={(e) => setAiSettings({ ...aiSettings, temperature: parseFloat(e.target.value) })}
+                      className="w-full accent-accent"
+                    />
                   </div>
                 </div>
 
-                <button
-                  onClick={handleAISave}
-                  className="w-full bg-accent text-background font-bold py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-accent/20"
-                >
-                  Save Sacred Configuration
+                <button onClick={handleAISave} className="w-full bg-accent text-background font-bold py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-accent/20">
+                  Save Mya AI Settings
                 </button>
-              </div>
-            )}
-
-            {activeTab === "messages" && (
-              <div className="grid grid-cols-1 gap-6">
-                {messages.length === 0 && (
-                  <div className="text-center py-12 bg-background-alt rounded-2xl border border-primary/20 text-foreground-muted italic">
-                    The silence is profound. No messages yet.
-                  </div>
-                )}
-                {messages.map((msg) => (
-                  <div key={msg.id} className="bg-background-alt p-6 rounded-2xl border border-primary/20 shadow-lg flex flex-col gap-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-accent">
-                          <Users size={20} />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-foreground">{msg.sender?.name || "Unknown Disciple"}</h4>
-                          <p className="text-xs text-foreground-muted">{msg.sender?.email}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {msg.isBooking && (
-                          <span className="bg-accent/20 text-accent text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mr-2">
-                            Booking Request
-                          </span>
-                        )}
-                        <span className="text-[10px] text-foreground-muted">
-                          {new Date(msg.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-background/50 rounded-xl border border-primary/10 italic text-foreground">
-                      &quot;{msg.content}&quot;
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={replyContent[msg.senderId] || ""}
-                        onChange={(e) => setReplyContent({...replyContent, [msg.senderId]: e.target.value})}
-                        placeholder="Type your response to this seeker..."
-                        className="flex-grow bg-background border border-primary/20 rounded-xl px-4 py-2 text-sm focus:border-accent outline-none"
-                      />
-                      <button
-                        onClick={() => handleReply(msg.senderId)}
-                        className="bg-primary hover:bg-primary-light text-white p-2 rounded-xl transition-all"
-                      >
-                        <Send size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
 
@@ -408,26 +514,21 @@ export default function AdminPage() {
               <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6 max-w-xl mx-auto">
                 <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">System Sanctuary Settings</h2>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground-muted">Change Admin Password</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
-                      placeholder="New sacred password..."
-                    />
-                    <p className="text-[10px] text-foreground-muted">Minimum 8 characters. This will update your login credentials.</p>
-                  </div>
-
-                  <button
-                    onClick={handlePasswordChange}
-                    className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-light transition-all shadow-lg"
-                  >
-                    Update Admin Password
-                  </button>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-foreground-muted">Change Admin Password</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
+                    placeholder="New sacred password..."
+                  />
+                  <p className="text-[10px] text-foreground-muted">Minimum 8 characters. This updates your admin credentials.</p>
                 </div>
+
+                <button onClick={handlePasswordChange} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-light transition-all shadow-lg">
+                  Update Admin Password
+                </button>
               </div>
             )}
           </div>
