@@ -5,9 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { eq } from "drizzle-orm";
+import { OPENROUTER_MODEL } from "@/lib/ai-model";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = "meta-llama/llama-3.1-8b-instruct:free";
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: MODEL,
+        model: OPENROUTER_MODEL,
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" }
       },

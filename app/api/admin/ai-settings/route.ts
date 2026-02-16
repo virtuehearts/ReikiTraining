@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { OPENROUTER_MODEL } from "@/lib/ai-model";
 
 export async function GET() {
   try {
@@ -14,7 +15,11 @@ export async function GET() {
 
     const [settings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
 
-    return NextResponse.json(settings || null);
+    if (!settings) {
+      return NextResponse.json(null);
+    }
+
+    return NextResponse.json({ ...settings, model: OPENROUTER_MODEL });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -32,7 +37,7 @@ export async function POST(req: Request) {
       .values({
         id: "default",
         systemPrompt: body.systemPrompt,
-        model: body.model,
+        model: OPENROUTER_MODEL,
         temperature: parseFloat(body.temperature),
         topP: parseFloat(body.topP),
         maxContextMessages: Math.max(5, parseInt(body.maxContextMessages, 10) || 40),
@@ -43,7 +48,7 @@ export async function POST(req: Request) {
         target: [aiSettingsTable.id],
         set: {
           systemPrompt: body.systemPrompt,
-          model: body.model,
+          model: OPENROUTER_MODEL,
           temperature: parseFloat(body.temperature),
           topP: parseFloat(body.topP),
           maxContextMessages: Math.max(5, parseInt(body.maxContextMessages, 10) || 40),

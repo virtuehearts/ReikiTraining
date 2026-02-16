@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { OPENROUTER_MODEL } from "@/lib/ai-model";
 import {
   Users,
   Settings,
@@ -66,7 +67,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [aiSettings, setAiSettings] = useState<AISettings>({
     systemPrompt: "",
-    model: "",
+    model: OPENROUTER_MODEL,
     temperature: 0.7,
     topP: 1.0,
     maxContextMessages: 40,
@@ -122,7 +123,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/ai-settings");
       if (res.ok) {
         const data = await res.json();
-        if (data) setAiSettings(data);
+        if (data) setAiSettings({ ...data, model: OPENROUTER_MODEL });
       }
     } catch {
       console.error("Failed to fetch AI settings");
@@ -187,7 +188,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/ai-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(aiSettings),
+        body: JSON.stringify({ ...aiSettings, model: OPENROUTER_MODEL }),
       });
       if (res.ok) alert("AI Settings updated successfully");
     } catch {
@@ -485,7 +486,7 @@ export default function AdminPage() {
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6">
                   <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">Mya AI Configuration</h2>
-                  <p className="text-sm text-foreground-muted">Configure OpenRouter model selection, context window, memory usage, and system prompt behavior. End users never see memory internals.</p>
+                  <p className="text-sm text-foreground-muted">Configure OpenRouter context window, memory usage, and system prompt behavior. Model is locked to NVIDIA Nemotron 3 Nano 30B A3B (free) to keep costs low. End users never see memory internals.</p>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -516,9 +517,9 @@ export default function AdminPage() {
                         <input
                           type="text"
                           value={aiSettings.model}
-                          onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
-                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
-                          placeholder="e.g. openai/gpt-4o-mini"
+                          readOnly
+                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm text-foreground-muted"
+                          placeholder="nvidia/nemotron-3-nano-30b-a3b:free"
                         />
                       </div>
                       <div className="space-y-2">

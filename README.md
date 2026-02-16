@@ -31,7 +31,7 @@ A collection of additional meditation techniques, symbols, and wisdom to support
 ### 🤖 Mya - The Reiki Assistant
 An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides:
 - **Sacred Memory:** Mya remembers your past interactions, providing a continuous spiritual journey.
-- **Dynamic Wisdom:** The administrator can adjust Mya's system prompts, model, and parameters (temperature, top_p) directly from the Admin Sanctuary.
+- **Dynamic Wisdom:** The administrator can adjust Mya's system prompts and parameters (temperature, top_p) directly from the Admin Sanctuary while the model stays locked to the low-cost NVIDIA Nemotron free tier.
 - **Compassionate Guidance:** Insights on relaxation, virtues, and Reiki symbols.
 
 ### ✉️ Direct Messaging
@@ -44,7 +44,7 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Database:** [Drizzle ORM](https://orm.drizzle.team/) with **SQLite**
 - **Authentication:** [NextAuth.js](https://next-auth.js.org/)
-- **AI Integration:** [OpenRouter API](https://openrouter.ai/) (meta-llama/llama-3.1-8b-instruct:free)
+- **AI Integration:** [OpenRouter API](https://openrouter.ai/) (nvidia/nemotron-3-nano-30b-a3b:free)
 
 ## 🚀 Getting Started
 

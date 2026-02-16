@@ -17,7 +17,7 @@ export const users = sqliteTable('user', {
 export const aiSettings = sqliteTable('aiSettings', {
   id: text('id').primaryKey().default('default'),
   systemPrompt: text('systemPrompt').notNull(),
-  model: text('model').default('openai/gpt-4o-mini').notNull(),
+  model: text('model').default('nvidia/nemotron-3-nano-30b-a3b:free').notNull(),
   temperature: real('temperature').default(0.7).notNull(),
   topP: real('topP').default(1.0).notNull(),
   maxContextMessages: integer('maxContextMessages').default(40).notNull(),
