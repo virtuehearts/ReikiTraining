@@ -14,7 +14,7 @@ export async function GET() {
 
     const [settings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
 
-    return NextResponse.json(settings);
+    return NextResponse.json(settings || null);
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
