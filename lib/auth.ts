@@ -166,9 +166,13 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
-      if (user?.email) {
-        console.log(`[Auth] JWT callback: first-time population for ${user.email}`);
-        const email = user.email.trim().toLowerCase();
+      const emailSource = user?.email || token.email;
+      if (emailSource) {
+        const email = emailSource.trim().toLowerCase();
+        if (user?.email) {
+          console.log(`[Auth] JWT callback: first-time population for ${email}`);
+        }
+
         try {
           const [dbUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
           if (dbUser) {
@@ -183,6 +187,20 @@ export const authOptions: NextAuthOptions = {
         }
       }
       return token;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+
+      try {
+        const parsed = new URL(url);
+        if (parsed.origin === baseUrl) {
+          return url;
+        }
+      } catch {
+        // ignore invalid URL and fall through to baseUrl
+      }
+
+      return baseUrl;
     },
     async session({ session, token }) {
       if (token) {

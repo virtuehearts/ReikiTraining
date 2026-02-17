@@ -29,6 +29,11 @@ export default function DashboardPage() {
   const [lessonLockMessage, setLessonLockMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.replace("/");
+  };
+
   const highestCompletedDay = progress.length ? Math.max(...progress) : 0;
   const nextDayCandidate = Math.min(highestCompletedDay + 1, 7);
   const previousDayEntry = completedProgress.find((entry) => entry.day === highestCompletedDay);
@@ -118,7 +123,7 @@ export default function DashboardPage() {
           <div className="text-right">
             <p className="text-sm font-medium">{session?.user?.name}</p>
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={handleSignOut}
               className="text-xs text-foreground-muted hover:text-accent"
             >
               Sign Out

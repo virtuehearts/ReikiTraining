@@ -54,6 +54,7 @@ function LoginContent() {
       const res = await signIn("credentials", {
         email,
         password,
+        callbackUrl,
         redirect: false,
       });
 
@@ -68,7 +69,7 @@ function LoginContent() {
         const nextSession = await getSession();
         const fallbackRoute = nextSession?.user?.role === "ADMIN" ? "/admin" : "/dashboard";
         const targetRoute = callbackUrl === "/dashboard" ? fallbackRoute : callbackUrl;
-        router.push(targetRoute);
+        router.replace(res?.url || targetRoute);
       }
     } catch (err) {
       setError("An error occurred during sign in");
