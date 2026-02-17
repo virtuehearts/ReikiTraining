@@ -97,8 +97,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   const handleSignOut = async () => {
-    await signOut({ redirect: false });
-    router.replace("/");
+    await signOut({ callbackUrl: "/login", redirect: true });
   };
 
   useEffect(() => {

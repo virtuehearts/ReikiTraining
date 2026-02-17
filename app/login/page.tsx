@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
-import { signIn, getProviders, getSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, signOut, getProviders, getSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const getSafeCallbackUrl = (rawCallbackUrl: string | null) => {
@@ -32,7 +32,6 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<any>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"));
   const isAdminLogin = callbackUrl.includes("/admin");
@@ -51,6 +50,11 @@ function LoginContent() {
     setLoading(true);
 
     try {
+      const existingSession = await getSession();
+      if (existingSession) {
+        await signOut({ redirect: false });
+      }
+
       const res = await signIn("credentials", {
         email,
         password,
@@ -66,10 +70,8 @@ function LoginContent() {
           : res.error;
         setError(errorMsg);
       } else {
-        const nextSession = await getSession();
-        const fallbackRoute = nextSession?.user?.role === "ADMIN" ? "/admin" : "/dashboard";
-        const targetRoute = callbackUrl === "/dashboard" ? fallbackRoute : callbackUrl;
-        router.replace(res?.url || targetRoute);
+        const safeResultUrl = getSafeCallbackUrl(res?.url || callbackUrl);
+        window.location.assign(safeResultUrl);
       }
     } catch (err) {
       setError("An error occurred during sign in");

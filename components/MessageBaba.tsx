@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { Send, User, MessageSquare, X } from "lucide-react";
+import { Send, MessageSquare, X } from "lucide-react";
 
 export default function MessageBaba() {
   const { data: session } = useSession();
@@ -72,8 +72,8 @@ export default function MessageBaba() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 pb-6 pt-20 sm:px-4 sm:pt-24 bg-black/60 backdrop-blur-sm">
-          <div className="bg-background-alt border border-primary/20 rounded-3xl w-full max-w-lg h-[min(600px,calc(100dvh-7rem))] sm:h-[min(600px,calc(100dvh-8rem))] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-3 pb-4 pt-20 sm:px-4 sm:pt-24 bg-black/60 backdrop-blur-sm">
+          <div className="bg-background-alt border border-primary/20 rounded-3xl w-full max-w-lg max-h-[calc(100vh-6rem)] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
             <div className="p-4 sm:p-6 border-b border-primary/10 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-xl font-serif text-accent">Message Baba Virtuehearts</h3>
@@ -82,13 +82,13 @@ export default function MessageBaba() {
               <button
                 onClick={() => setIsOpen(false)}
                 aria-label="Close message window"
-                className="text-foreground-muted hover:text-accent"
+                className="h-9 w-9 rounded-full border border-primary/20 flex items-center justify-center text-foreground-muted hover:text-accent hover:border-accent/40 transition-colors"
               >
-                <X size={24} />
+                <X size={18} />
               </button>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-6 space-y-4">
+            <div className="flex-grow min-h-0 overflow-y-auto p-6 space-y-4">
               {messages.length === 0 && (
                 <div className="text-center py-8 text-foreground-muted italic text-sm">
                   No messages yet. Send your first message or a booking request below.

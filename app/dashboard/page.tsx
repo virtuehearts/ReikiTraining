@@ -30,8 +30,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const handleSignOut = async () => {
-    await signOut({ redirect: false });
-    router.replace("/");
+    await signOut({ callbackUrl: "/login", redirect: true });
   };
 
   const highestCompletedDay = progress.length ? Math.max(...progress) : 0;
