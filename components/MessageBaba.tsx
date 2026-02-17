@@ -72,14 +72,18 @@ export default function MessageBaba() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-background-alt border border-primary/20 rounded-3xl w-full max-w-lg h-[600px] flex flex-col shadow-2xl animate-in zoom-in-95">
-            <div className="p-6 border-b border-primary/10 flex justify-between items-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-background-alt border border-primary/20 rounded-3xl w-full max-w-lg h-[min(600px,calc(100dvh-1rem))] sm:h-[min(600px,calc(100dvh-2rem))] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-primary/10 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-xl font-serif text-accent">Message Baba Virtuehearts</h3>
                 <p className="text-xs text-foreground-muted">Direct communication with your guide</p>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-foreground-muted hover:text-accent">
+              <button
+                onClick={() => setIsOpen(false)}
+                aria-label="Close message window"
+                className="text-foreground-muted hover:text-accent"
+              >
                 <X size={24} />
               </button>
             </div>
