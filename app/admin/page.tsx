@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { OPENROUTER_MODEL } from "@/lib/ai-model";
 import {
@@ -284,6 +284,12 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-3">
             <a href="/admin/memory" className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-accent hover:bg-primary/10">Memory Console</a>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-foreground-muted hover:text-accent hover:bg-primary/10"
+            >
+              Sign Out
+            </button>
             <div className="flex flex-wrap bg-background-alt p-1 rounded-xl border border-primary/20">
             {[
               { tab: "overview", icon: <Sparkles size={18} />, label: "Overview" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import IntakeForm from "@/components/IntakeForm";
 import ProgressIndicator from "@/components/ProgressIndicator";
@@ -78,7 +78,7 @@ export default function DashboardPage() {
           <div className="text-right">
             <p className="text-sm font-medium">{session?.user?.name}</p>
             <button
-              onClick={() => router.push("/api/auth/signout")}
+              onClick={() => signOut({ callbackUrl: "/login" })}
               className="text-xs text-foreground-muted hover:text-accent"
             >
               Sign Out
