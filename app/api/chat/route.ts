@@ -4,7 +4,7 @@ import { chatMessages, memoryItems, users } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { createInteractionMemories, retrieve } from "@/lib/memory";
 
 export async function GET(req: Request) {
@@ -65,6 +65,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Messages are required" }, { status: 400 });
     }
 
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const [minuteUsage] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(chatMessages)
+      .where(
+        and(
+          eq(chatMessages.userId, session.user.id),
+          eq(chatMessages.role, "user"),
+          gte(chatMessages.createdAt, oneMinuteAgo)
+        )
+      );
+
+    if ((minuteUsage?.count || 0) >= 20) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait before sending more messages." },
+        { status: 429 }
+      );
+    }
+
     const user = await db.query.users.findFirst({
       where: eq(users.id, session.user.id),
       with: {
@@ -76,16 +95,13 @@ export async function POST(req: Request) {
       },
     });
 
-    // Construct history from database if no messages provided or to supplement
     const history = user?.chatMessages.map(m => ({
       role: m.role,
       content: m.content
     })) || [];
 
-    // Combine history with new message
     const lastUserMessage = currentMessages[currentMessages.length - 1];
 
-    // Save user message to DB
     await db.insert(chatMessages).values({
       userId: session.user.id,
       role: "user",
@@ -106,7 +122,6 @@ export async function POST(req: Request) {
 
     await createInteractionMemories(session.user.id, lastUserMessage.content, reply.content);
 
-    // Save assistant reply to DB
     await db.insert(chatMessages).values({
       userId: session.user.id,
       role: "assistant",

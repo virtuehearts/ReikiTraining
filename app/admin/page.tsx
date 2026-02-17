@@ -25,6 +25,8 @@ interface User {
   status: string;
   role: string;
   createdAt: string;
+  todayRequestCount?: number;
+  heavyUser?: boolean;
   intake: {
     age?: number;
     experience?: string;
@@ -123,7 +125,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/ai-settings");
       if (res.ok) {
         const data = await res.json();
-        if (data) setAiSettings({ ...data, model: OPENROUTER_MODEL });
+        if (data) setAiSettings({ ...data, model: data.model || OPENROUTER_MODEL });
       }
     } catch {
       console.error("Failed to fetch AI settings");
@@ -188,7 +190,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/ai-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...aiSettings, model: OPENROUTER_MODEL }),
+        body: JSON.stringify(aiSettings),
       });
       if (res.ok) alert("AI Settings updated successfully");
     } catch {
@@ -309,7 +311,7 @@ export default function AdminPage() {
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             {activeTab === "overview" && (
-              <div className="grid md:grid-cols-4 gap-4">
+              <div className="grid md:grid-cols-5 gap-4">
                 <div className="bg-background-alt p-5 rounded-2xl border border-primary/20">
                   <p className="text-sm text-foreground-muted">Total Users</p>
                   <p className="text-3xl text-accent font-semibold">{users.length}</p>
@@ -326,6 +328,10 @@ export default function AdminPage() {
                   <p className="text-sm text-foreground-muted">Disabled Accounts</p>
                   <p className="text-3xl text-red-400 font-semibold">{users.filter((u) => u.status === "DISABLED").length}</p>
                 </div>
+                <div className="bg-background-alt p-5 rounded-2xl border border-primary/20">
+                  <p className="text-sm text-foreground-muted">Heavy Users (today)</p>
+                  <p className="text-3xl text-orange-400 font-semibold">{users.filter((u) => u.heavyUser).length}</p>
+                </div>
               </div>
             )}
 
@@ -338,6 +344,7 @@ export default function AdminPage() {
                       <th className="p-4 text-accent font-semibold">Email</th>
                       <th className="p-4 text-accent font-semibold">Status</th>
                       <th className="p-4 text-accent font-semibold">Registered</th>
+                      <th className="p-4 text-accent font-semibold">Usage</th>
                       <th className="p-4 text-accent font-semibold">Actions</th>
                     </tr>
                   </thead>
@@ -362,6 +369,16 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="p-4 text-sm text-foreground-muted">{formatDate(user.createdAt)}</td>
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs text-foreground-muted">{user.todayRequestCount || 0} requests today</span>
+                            {user.heavyUser && (
+                              <span className="inline-flex w-fit px-2 py-1 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-400/30">
+                                Heavy User
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="p-4 space-x-2">
                           {user.status !== "APPROVED" ? (
                             <button onClick={() => handleStatusChange(user.id, "APPROVED")} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors" title="Activate account">
@@ -520,8 +537,8 @@ export default function AdminPage() {
                         <input
                           type="text"
                           value={aiSettings.model}
-                          readOnly
-                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm text-foreground-muted"
+                          onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
+                          className="w-full bg-background border border-primary/20 rounded-xl p-3 text-sm focus:border-accent outline-none"
                           placeholder="nvidia/nemotron-3-nano-30b-a3b:free"
                         />
                       </div>

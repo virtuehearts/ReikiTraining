@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { users } from "@/lib/schema";
+import { chatMessages, users } from "@/lib/schema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { desc } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -20,7 +20,35 @@ export async function GET() {
       orderBy: [desc(users.createdAt)],
     });
 
-    return NextResponse.json(allUsers);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const usageRows = await db
+      .select({
+        userId: chatMessages.userId,
+        requestCount: sql<number>`count(*)`,
+      })
+      .from(chatMessages)
+      .where(
+        and(
+          eq(chatMessages.role, "user"),
+          gte(chatMessages.createdAt, startOfDay)
+        )
+      )
+      .groupBy(chatMessages.userId);
+
+    const usageByUserId = new Map(usageRows.map((row) => [row.userId, row.requestCount]));
+
+    const enrichedUsers = allUsers.map((user) => {
+      const todayRequestCount = usageByUserId.get(user.id) || 0;
+      return {
+        ...user,
+        todayRequestCount,
+        heavyUser: todayRequestCount > 200,
+      };
+    });
+
+    return NextResponse.json(enrichedUsers);
   } catch (error) {
     console.error("Admin fetch error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
