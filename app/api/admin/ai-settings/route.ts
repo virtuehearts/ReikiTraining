@@ -19,7 +19,7 @@ export async function GET() {
       return NextResponse.json(null);
     }
 
-    return NextResponse.json({ ...settings, model: OPENROUTER_MODEL });
+    return NextResponse.json({ ...settings, model: settings.model || OPENROUTER_MODEL });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -33,11 +33,15 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+    const model = typeof body.model === "string" && body.model.trim().length > 0
+      ? body.model.trim()
+      : OPENROUTER_MODEL;
+
     const [settings] = await db.insert(aiSettingsTable)
       .values({
         id: "default",
         systemPrompt: body.systemPrompt,
-        model: OPENROUTER_MODEL,
+        model,
         temperature: parseFloat(body.temperature),
         topP: parseFloat(body.topP),
         maxContextMessages: Math.max(5, parseInt(body.maxContextMessages, 10) || 40),
@@ -48,7 +52,7 @@ export async function POST(req: Request) {
         target: [aiSettingsTable.id],
         set: {
           systemPrompt: body.systemPrompt,
-          model: OPENROUTER_MODEL,
+          model,
           temperature: parseFloat(body.temperature),
           topP: parseFloat(body.topP),
           maxContextMessages: Math.max(5, parseInt(body.maxContextMessages, 10) || 40),
