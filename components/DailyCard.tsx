@@ -8,7 +8,7 @@ import { CheckCircle, ChevronRight, BookOpen, Wind, Star } from "lucide-react";
 
 interface DailyCardProps {
   day: number;
-  onComplete: () => void;
+  onComplete: (completedAt: string) => void;
 }
 
 export default function DailyCard({ day, onComplete }: DailyCardProps) {
@@ -19,25 +19,40 @@ export default function DailyCard({ day, onComplete }: DailyCardProps) {
   const [saving, setSaving] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [quizError, setQuizError] = useState("");
+  const [completionError, setCompletionError] = useState("");
 
   useEffect(() => {
     setActiveQuiz(content?.quiz);
     setStep(1);
     setQuizError("");
+    setCompletionError("");
   }, [day, content]);
 
   const handleFinish = async () => {
     setSaving(true);
+    setCompletionError("");
     try {
       // Save reflection and progress
-      await fetch("/api/user/complete-day", {
+      const res = await fetch("/api/user/complete-day", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ day, reflection }),
+        body: JSON.stringify({
+          day,
+          reflection,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
-      onComplete();
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        setCompletionError(payload?.error || "Unable to complete this lesson right now.");
+        return;
+      }
+
+      onComplete(new Date().toISOString());
       setStep(1); // Reset for next day if needed
     } catch (err) {
+      setCompletionError("Connection issue while completing this lesson. Please try again.");
       console.error("Failed to complete day");
     } finally {
       setSaving(false);
@@ -182,6 +197,7 @@ export default function DailyCard({ day, onComplete }: DailyCardProps) {
             >
               {saving ? "Integrating..." : "Complete Day " + day}
             </button>
+            {completionError && <p className="text-sm text-red-300 text-center">{completionError}</p>}
           </div>
         )}
       </div>
