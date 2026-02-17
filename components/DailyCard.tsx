@@ -18,10 +18,12 @@ export default function DailyCard({ day, onComplete }: DailyCardProps) {
   const [activeQuiz, setActiveQuiz] = useState(content?.quiz);
   const [saving, setSaving] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState("");
 
   useEffect(() => {
     setActiveQuiz(content?.quiz);
     setStep(1);
+    setQuizError("");
   }, [day, content]);
 
   const handleFinish = async () => {
@@ -128,17 +130,28 @@ export default function DailyCard({ day, onComplete }: DailyCardProps) {
                   <button
                     onClick={async () => {
                       setGeneratingQuiz(true);
+                      setQuizError("");
                       try {
                         const res = await fetch("/api/quiz", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ virtue: content.virtue, day }),
                         });
-                        if (res.ok) {
-                          const dynamicQuiz = await res.json();
-                          setActiveQuiz(dynamicQuiz);
+                        if (!res.ok) {
+                          const errorPayload = await res.json().catch(() => ({}));
+                          setQuizError(errorPayload?.error || "Unable to generate wisdom check right now. Please try again.");
+                          return;
                         }
-                      } catch (e) {} finally {
+
+                        const dynamicQuiz = await res.json();
+                        if (Array.isArray(dynamicQuiz) && dynamicQuiz.length > 0) {
+                          setActiveQuiz(dynamicQuiz);
+                        } else {
+                          setQuizError("Received an invalid wisdom check. Please try again.");
+                        }
+                      } catch (e) {
+                        setQuizError("Connection issue while generating wisdom check. Please try again.");
+                      } finally {
                         setGeneratingQuiz(false);
                       }
                     }}
@@ -147,6 +160,7 @@ export default function DailyCard({ day, onComplete }: DailyCardProps) {
                   >
                     {generatingQuiz ? "Generating..." : "Generate Personalized Wisdom Check (AI)"}
                   </button>
+                  {quizError && <p className="text-xs text-red-400 text-center">{quizError}</p>}
                 </>
               )}
             </div>
