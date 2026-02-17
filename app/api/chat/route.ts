@@ -7,6 +7,18 @@ import { NextResponse } from "next/server";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { createInteractionMemories, retrieve } from "@/lib/memory";
 
+function normalizeAssistantReply(text: string) {
+  const collapsed = text
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\*+/g, "")
+    .replace(/[•◦▪▫→]/g, "")
+    .replace(/[—–]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return collapsed.length > 500 ? `${collapsed.slice(0, 497).trimEnd()}...` : collapsed;
+}
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -120,15 +132,21 @@ export async function POST(req: Request) {
       email: user?.email,
     }, memoryContext);
 
-    await createInteractionMemories(session.user.id, lastUserMessage.content, reply.content);
+    const normalizedContent = normalizeAssistantReply(reply.content || "");
+    const normalizedReply = {
+      ...reply,
+      content: normalizedContent,
+    };
+
+    await createInteractionMemories(session.user.id, lastUserMessage.content, normalizedContent);
 
     await db.insert(chatMessages).values({
       userId: session.user.id,
       role: "assistant",
-      content: reply.content
+      content: normalizedContent
     });
 
-    return NextResponse.json(reply);
+    return NextResponse.json(normalizedReply);
   } catch (error) {
     console.error("Chat error:", error);
     const message = error instanceof Error ? error.message : "Internal server error";

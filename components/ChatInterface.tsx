@@ -10,7 +10,7 @@ interface Message {
 
 const WELCOME_MESSAGE: Message = {
   role: "assistant",
-  content: "Greetings, seeker. I am Mya. How may I assist your spirit today?",
+  content: "Hi, I am Mya. I would love to get to know you and support your Reiki path. What name would you like me to call you?",
 };
 
 export default function ChatInterface() {
@@ -121,9 +121,6 @@ export default function ChatInterface() {
                 }`}
               >
                 {msg.content}
-                {msg.role === "assistant" && msg.content.includes("Blessings") && (
-                  <p className="mt-4 font-script text-xl text-accent">Blessings, Mya</p>
-                )}
               </div>
             </div>
           </div>

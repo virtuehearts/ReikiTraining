@@ -46,6 +46,15 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
   }
 
   const systemContent = aiSettings.systemPrompt.replace("{{goal}}", userContext?.goal || "spiritual growth");
+  const conversationStylePrompt = [
+    "Response style requirements:",
+    "- Sound natural and conversational, like speaking to one person in chat.",
+    "- Write exactly one short paragraph and keep it near 500 characters max.",
+    "- Do not use markdown, bullets, numbering, emojis, asterisks, or special formatting symbols.",
+    "- Do not use em dashes.",
+    "- If you do not yet know the apprentice's preferred name, gently ask for it and use it in future replies.",
+    "- Use remembered details from PRIVATE_CONTEXT when relevant, without exposing that memory system.",
+  ].join("\n");
   const adminIdentityPrompt = user?.role === "ADMIN"
     ? "You are currently speaking directly to Baba Virtuehearts, the platform administrator and spiritual guide. Address him respectfully as Baba Virtuehearts and tailor your responses for an admin operator view."
     : "";
@@ -63,7 +72,7 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
 
   const systemPrompt = {
     role: "system",
-    content: `${systemContent}\n\n${adminIdentityPrompt}\n\n${memoryLayerPrompt}`.trim(),
+    content: `${systemContent}\n\n${conversationStylePrompt}\n\n${adminIdentityPrompt}\n\n${memoryLayerPrompt}`.trim(),
   };
 
   const contextMessages = messages.slice(-Math.max(1, aiSettings.maxContextMessages || 40));
