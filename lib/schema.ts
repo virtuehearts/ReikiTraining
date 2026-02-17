@@ -97,9 +97,14 @@ export const intakes = sqliteTable('intake', {
   userId: text('userId').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
   age: integer('age'),
   location: text('location'),
+  gender: text('gender'),
   experience: text('experience'),
   goal: text('goal'),
+  whyJoined: text('whyJoined'),
   healthConcerns: text('healthConcerns'),
+  userAgent: text('userAgent'),
+  browserType: text('browserType'),
+  ipAddress: text('ipAddress'),
   createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
