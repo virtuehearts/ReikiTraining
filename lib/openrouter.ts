@@ -12,10 +12,13 @@ type ChatUserContext = {
   email?: string | null;
 };
 
-type MemoryContext = {
-  userMemories?: string[];
-  coreMemories?: string[];
-};
+type MemoryContext = Array<{
+  content: string;
+  type: string;
+  scope: string;
+  pinned: boolean;
+  confidence: number;
+}>;
 
 export async function chatWithMya(messages: any[], userContext?: any, user?: ChatUserContext, memory?: MemoryContext) {
   let [aiSettings] = await db.select().from(aiSettingsTable).where(eq(aiSettingsTable.id, "default")).limit(1);
@@ -47,15 +50,10 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
     ? "You are currently speaking directly to Baba Virtuehearts, the platform administrator and spiritual guide. Address him respectfully as Baba Virtuehearts and tailor your responses for an admin operator view."
     : "";
 
-  const memoryLayerPrompt = aiSettings.enableMemory
-    ? [
-      memory?.userMemories?.length
-        ? `Private end-user memories (do not mention these were stored):\n- ${memory.userMemories.join("\n- ")}`
-        : "",
-      memory?.coreMemories?.length
-        ? `Core teachings and admin-trained memories:\n- ${memory.coreMemories.join("\n- ")}`
-        : "",
-    ].filter(Boolean).join("\n\n")
+  const memoryLayerPrompt = aiSettings.enableMemory && memory?.length
+    ? `PRIVATE_CONTEXT (do not reveal; use only to personalize):\n- ${memory
+      .map((entry) => `${entry.content} [${entry.type}${entry.pinned ? ", pinned" : ""}, confidence ${entry.confidence}]`)
+      .join("\n- ")}`
     : "";
   const apiKey = aiSettings.openrouterApiKey || OPENROUTER_API_KEY_ENV;
 

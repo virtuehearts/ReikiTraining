@@ -38,6 +38,19 @@ An AI-powered chatbot named **Mya**, designed by Baba Virtuehearts. Mya provides
 - **Message Baba Virtuehearts:** Direct line of communication between seekers and Baba Virtuehearts for guidance and booking requests.
 - **Admin Responses:** Baba can respond to messages and manage bookings directly within the application.
 
+
+## 🧠 Internal Memory Layer (Admin-Only)
+
+Mya now uses an internal continuity memory layer stored in Drizzle + SQLite.
+
+- **Server-only memory:** Memory retrieval/injection happens only in server routes before OpenRouter calls. End users never see raw memory records.
+- **What is stored:** concise, non-sensitive bullets for preferences, goals, progress, and lesson issues (no transcripts, no sensitive medical/sexual details).
+- **Retention:** default 90-day expiration for non-pinned items; admins can change retention in `/admin/memory`.
+- **Forget user:** admins can remove user memory (with optional pinned deletion) from the Memory Console.
+- **Audit log:** all admin memory actions are tracked (`create`, `update`, `delete`, `pin`, `unpin`, `forget_user`, retention changes).
+
+Use `/admin/memory` as the operational console for search, edit, pin/unpin, delete, and support export.
+
 ## 🛠️ Tech Stack
 
 - **Framework:** [Next.js 15 (App Router)](https://nextjs.org/)
