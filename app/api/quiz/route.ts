@@ -43,9 +43,32 @@ export async function POST(req: Request) {
       }
     );
 
-    const content = JSON.parse(response.data.choices[0].message.content);
-    // Handle different possible JSON structures from LLM
-    const quiz = content.quiz || content.questions || content;
+    const rawContent = response.data?.choices?.[0]?.message?.content;
+    if (typeof rawContent !== "string") {
+      throw new Error("Invalid AI response payload");
+    }
+
+    const sanitizedContent = rawContent
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+
+    const content = JSON.parse(sanitizedContent);
+
+    const quiz = Array.isArray(content)
+      ? content
+      : Array.isArray(content?.quiz)
+      ? content.quiz
+      : Array.isArray(content?.questions)
+      ? content.questions
+      : Array.isArray(content?.items)
+      ? content.items
+      : [];
+
+    if (!quiz.length) {
+      throw new Error("AI response did not include quiz questions");
+    }
 
     return NextResponse.json(quiz);
   } catch (error) {
