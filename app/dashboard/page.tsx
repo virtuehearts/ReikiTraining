@@ -10,13 +10,39 @@ import Link from "next/link";
 import { MessageCircle, Library } from "lucide-react";
 import MessageBaba from "@/components/MessageBaba";
 
+type CompletedProgressEntry = {
+  day: number;
+  completedAt: string | null;
+};
+
+function getDateKeyLocal(date: Date) {
+  return date.toLocaleDateString("en-CA");
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [hasIntake, setHasIntake] = useState<boolean | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
   const [progress, setProgress] = useState<number[]>([]); // Days completed
+  const [completedProgress, setCompletedProgress] = useState<CompletedProgressEntry[]>([]);
+  const [lessonLockMessage, setLessonLockMessage] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const highestCompletedDay = progress.length ? Math.max(...progress) : 0;
+  const nextDayCandidate = Math.min(highestCompletedDay + 1, 7);
+  const previousDayEntry = completedProgress.find((entry) => entry.day === highestCompletedDay);
+
+  const isNextDayLockedUntilMidnight = Boolean(
+    highestCompletedDay > 0 &&
+    highestCompletedDay < 7 &&
+    previousDayEntry?.completedAt &&
+    getDateKeyLocal(new Date(previousDayEntry.completedAt)) === getDateKeyLocal(new Date())
+  );
+
+  const maxUnlockedDay = isNextDayLockedUntilMidnight
+    ? highestCompletedDay
+    : nextDayCandidate;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -35,9 +61,23 @@ export default function DashboardPage() {
         const data = await res.json();
         setHasIntake(data.hasIntake);
         setProgress(data.completedDays || []);
+        setCompletedProgress(data.completedProgress || []);
         // Set current day to the first incomplete day
-        const firstIncomplete = [1,2,3,4,5,6,7].find(d => !data.completedDays.includes(d)) || 7;
-        setCurrentDay(firstIncomplete);
+        const completedDays = data.completedDays || [];
+        const highestCompleted = completedDays.length ? Math.max(...completedDays) : 0;
+        const previousEntry = (data.completedProgress || []).find((entry: CompletedProgressEntry) => entry.day === highestCompleted);
+        const lockNextDay = Boolean(
+          highestCompleted > 0 &&
+          highestCompleted < 7 &&
+          previousEntry?.completedAt &&
+          getDateKeyLocal(new Date(previousEntry.completedAt)) === getDateKeyLocal(new Date())
+        );
+
+        const nextAvailableDay = lockNextDay
+          ? highestCompleted
+          : ([1,2,3,4,5,6,7].find(d => !completedDays.includes(d)) || 7);
+
+        setCurrentDay(nextAvailableDay);
       }
     } catch (err) {
       console.error("Failed to fetch progress");
@@ -98,11 +138,41 @@ export default function DashboardPage() {
         <ProgressIndicator currentDay={currentDay} completedDays={progress} />
 
         <div className="grid grid-cols-1 gap-12 pt-8">
+          {isNextDayLockedUntilMidnight && highestCompletedDay < 7 && (
+            <div className="max-w-4xl mx-auto w-full rounded-2xl border border-accent/30 bg-primary/10 p-4 text-sm text-foreground-muted">
+              You completed today&apos;s lesson. Please meditate on this wisdom and return after midnight local time to continue to Day {highestCompletedDay + 1}.
+            </div>
+          )}
+
+          {lessonLockMessage && (
+            <div className="max-w-4xl mx-auto w-full rounded-2xl border border-red-400/40 bg-red-500/10 p-4 text-sm text-red-200">
+              {lessonLockMessage}
+            </div>
+          )}
+
            <DailyCard
              day={currentDay}
-             onComplete={() => {
-               setProgress([...progress, currentDay]);
-               if (currentDay < 7) setCurrentDay(currentDay + 1);
+             onComplete={(completedAt) => {
+               setLessonLockMessage("");
+               const updatedProgress = progress.includes(currentDay)
+                 ? progress
+                 : [...progress, currentDay];
+               const updatedCompletedProgress = completedProgress.some((entry) => entry.day === currentDay)
+                 ? completedProgress.map((entry) => entry.day === currentDay ? { ...entry, completedAt } : entry)
+                 : [...completedProgress, { day: currentDay, completedAt }];
+
+               setProgress(updatedProgress);
+               setCompletedProgress(updatedCompletedProgress);
+
+               const lockAfterCompletion = Boolean(
+                 currentDay < 7 &&
+                 completedAt &&
+                 getDateKeyLocal(new Date(completedAt)) === getDateKeyLocal(new Date())
+               );
+
+               if (currentDay < 7 && !lockAfterCompletion) {
+                 setCurrentDay(currentDay + 1);
+               }
              }}
            />
         </div>
@@ -111,14 +181,25 @@ export default function DashboardPage() {
           {[1, 2, 3, 4, 5, 6, 7].map((day) => (
             <button
               key={day}
-              onClick={() => setCurrentDay(day)}
-              disabled={day > Math.max(...progress, 0) + 1}
+              onClick={() => {
+                if (day > maxUnlockedDay) {
+                  setLessonLockMessage(
+                    `Please meditate on today's teachings. Day ${maxUnlockedDay + 1} unlocks after midnight local time.`
+                  );
+                  return;
+                }
+
+                setLessonLockMessage("");
+                setCurrentDay(day);
+              }}
               className={`p-4 rounded-xl border transition-all ${
                 day === currentDay
                   ? "bg-primary/20 border-accent shadow-[0_0_15px_rgba(212,175,55,0.2)]"
                   : progress.includes(day)
                   ? "bg-primary/5 border-primary/20 opacity-100"
-                  : "bg-background-alt border-primary/10 opacity-50 cursor-not-allowed"
+                  : day > maxUnlockedDay
+                  ? "bg-background-alt border-primary/10 opacity-50 cursor-not-allowed"
+                  : "bg-background-alt border-primary/10 opacity-80"
               }`}
             >
               <p className="text-xs uppercase tracking-widest text-accent mb-1 font-bold">Day</p>

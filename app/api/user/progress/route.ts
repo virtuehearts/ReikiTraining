@@ -28,6 +28,12 @@ export async function GET() {
     return NextResponse.json({
       hasIntake: !!user.intake,
       completedDays: user.progress.filter(p => p.completed).map(p => p.day),
+      completedProgress: user.progress
+        .filter((p) => p.completed)
+        .map((p) => ({
+          day: p.day,
+          completedAt: p.completedAt ? p.completedAt.toISOString() : null,
+        })),
     });
   } catch (error) {
     console.error("Progress fetch error:", error);
