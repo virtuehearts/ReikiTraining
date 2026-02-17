@@ -280,7 +280,9 @@ export default function AdminPage() {
             <h1 className="text-4xl font-serif text-accent">Admin Operations Panel</h1>
             <p className="text-foreground-muted mt-2">Manage users, registrations, booking requests, and Mya AI controls separately from disciple experience.</p>
           </div>
-          <div className="flex flex-wrap bg-background-alt p-1 rounded-xl border border-primary/20">
+          <div className="flex items-center gap-3">
+            <a href="/admin/memory" className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-accent hover:bg-primary/10">Memory Console</a>
+            <div className="flex flex-wrap bg-background-alt p-1 rounded-xl border border-primary/20">
             {[
               { tab: "overview", icon: <Sparkles size={18} />, label: "Overview" },
               { tab: "users", icon: <Users size={18} />, label: "Users" },
@@ -298,6 +300,7 @@ export default function AdminPage() {
                 <span>{label}</span>
               </button>
             ))}
+            </div>
           </div>
         </header>
 

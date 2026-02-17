@@ -26,6 +26,37 @@ export const aiSettings = sqliteTable('aiSettings', {
   updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
+export const memoryConfig = sqliteTable('memoryConfig', {
+  id: text('id').primaryKey().default('default'),
+  retentionDays: integer('retentionDays').default(90).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
+export const memoryItems = sqliteTable('memoryItem', {
+  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  userId: text('userId').references(() => users.id, { onDelete: 'cascade' }),
+  scope: text('scope').notNull().default('user'),
+  type: text('type').notNull().default('note'),
+  content: text('content').notNull(),
+  tags: text('tags').default('[]').notNull(),
+  confidence: integer('confidence').default(60).notNull(),
+  pinned: integer('pinned', { mode: 'boolean' }).default(false).notNull(),
+  source: text('source').default('chat').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  lastUsedAt: integer('lastUsedAt', { mode: 'timestamp' }),
+  expiresAt: integer('expiresAt', { mode: 'timestamp' }),
+});
+
+export const memoryEvents = sqliteTable('memoryEvent', {
+  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  actorId: text('actorId').references(() => users.id, { onDelete: 'set null' }),
+  userId: text('userId').references(() => users.id, { onDelete: 'set null' }),
+  action: text('action').notNull(),
+  details: text('details').default('{}').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
 export const chatMessages = sqliteTable('chatMessage', {
   id: text('id').primaryKey().$defaultFn(() => randomUUID()),
   userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -99,8 +130,31 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   chatMessages: many(chatMessages),
   userMemories: many(userMemories),
   authoredCoreMemories: many(coreMemories),
+  memoryItems: many(memoryItems),
+  actorMemoryEvents: many(memoryEvents, { relationName: 'actorMemoryEvents' }),
+  targetMemoryEvents: many(memoryEvents, { relationName: 'targetMemoryEvents' }),
   sentMessages: many(messages, { relationName: 'sentMessages' }),
   receivedMessages: many(messages, { relationName: 'receivedMessages' }),
+}));
+
+export const memoryItemsRelations = relations(memoryItems, ({ one }) => ({
+  user: one(users, {
+    fields: [memoryItems.userId],
+    references: [users.id],
+  }),
+}));
+
+export const memoryEventsRelations = relations(memoryEvents, ({ one }) => ({
+  actor: one(users, {
+    fields: [memoryEvents.actorId],
+    references: [users.id],
+    relationName: 'actorMemoryEvents',
+  }),
+  targetUser: one(users, {
+    fields: [memoryEvents.userId],
+    references: [users.id],
+    relationName: 'targetMemoryEvents',
+  }),
 }));
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
