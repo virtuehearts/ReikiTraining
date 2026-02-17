@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { OPENROUTER_MODEL } from "@/lib/ai-model";
 import {
   Users,
@@ -24,14 +25,21 @@ interface User {
   email: string;
   status: string;
   role: string;
+  image?: string | null;
   createdAt: string;
   todayRequestCount?: number;
   heavyUser?: boolean;
   intake: {
     age?: number;
+    location?: string;
+    gender?: string;
     experience?: string;
     goal?: string;
+    whyJoined?: string;
     healthConcerns?: string;
+    browserType?: string;
+    userAgent?: string;
+    ipAddress?: string;
   } | null;
 }
 
@@ -431,10 +439,29 @@ export default function AdminPage() {
                         </div>
                       </div>
                       {user.intake ? (
-                        <div className="mt-4 p-4 bg-background rounded-xl border border-primary/10 text-sm space-y-1">
+                        <div className="mt-4 p-4 bg-background rounded-xl border border-primary/10 text-sm space-y-2">
+                          {user.image && (
+                            <div className="pb-2">
+                              <Image
+                                src={user.image}
+                                alt={`${user.name || user.email} profile`}
+                                width={80}
+                                height={80}
+                                className="h-20 w-20 rounded-full object-cover border border-primary/30"
+                                unoptimized
+                              />
+                            </div>
+                          )}
+                          <p><span className="text-accent/70">Age:</span> {user.intake.age ?? "Not provided"}</p>
+                          <p><span className="text-accent/70">Location:</span> {user.intake.location || "Not provided"}</p>
+                          <p><span className="text-accent/70">Gender:</span> {user.intake.gender || "Not provided"}</p>
                           <p><span className="text-accent/70">Goal:</span> {user.intake.goal || "Not provided"}</p>
+                          <p><span className="text-accent/70">Why joined:</span> {user.intake.whyJoined || "Not provided"}</p>
                           <p><span className="text-accent/70">Experience:</span> {user.intake.experience || "Not provided"}</p>
                           <p><span className="text-accent/70">Health concerns:</span> {user.intake.healthConcerns || "Not provided"}</p>
+                          <p><span className="text-accent/70">Browser:</span> {user.intake.browserType || "Unknown"}</p>
+                          <p><span className="text-accent/70">User Agent:</span> {user.intake.userAgent || "Unknown"}</p>
+                          <p><span className="text-accent/70">IP Address:</span> {user.intake.ipAddress || "Unknown"}</p>
                         </div>
                       ) : (
                         <p className="text-sm text-foreground-muted mt-4">No intake submitted yet.</p>
