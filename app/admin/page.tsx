@@ -18,6 +18,7 @@ import {
   Ban,
   Sparkles,
   Eye,
+  ClipboardList,
 } from "lucide-react";
 
 interface User {
@@ -94,6 +95,11 @@ export default function AdminPage() {
   const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.replace("/");
+  };
 
   useEffect(() => {
     if (status === "loading") return;
@@ -295,7 +301,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <a href="/admin/memory" className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-accent hover:bg-primary/10">Memory Console</a>
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={handleSignOut}
               className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-foreground-muted hover:text-accent hover:bg-primary/10"
             >
               Sign Out
@@ -414,13 +420,20 @@ export default function AdminPage() {
                           )}
                           <a
                             href={`/admin/users/${user.id}`}
-                            target="_blank"
-                            rel="noreferrer"
                             className="inline-flex bg-accent hover:bg-accent-light text-white p-2 rounded-lg transition-colors"
                             title="Open detailed profile"
                           >
                             <Eye size={18} />
                           </a>
+                          {user.intake && (
+                            <a
+                              href={`/admin/users/${user.id}`}
+                              className="inline-flex bg-primary hover:bg-primary-light text-white p-2 rounded-lg transition-colors"
+                              title="Open intake form details"
+                            >
+                              <ClipboardList size={18} />
+                            </a>
+                          )}
                         </td>
                       </tr>
                     ))}

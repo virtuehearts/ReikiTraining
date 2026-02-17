@@ -42,6 +42,11 @@ export default function PendingPage() {
   const { data: session } = useSession();
   const router = useRouter();
 
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.replace("/");
+  };
+
   useEffect(() => {
     if (session?.user?.role === "ADMIN") {
       router.push("/admin");
@@ -79,7 +84,7 @@ export default function PendingPage() {
         </div>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={handleSignOut}
           className="mt-12 text-foreground-muted hover:text-accent transition-colors text-sm underline underline-offset-4"
         >
           Sign out and return later
