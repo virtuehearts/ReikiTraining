@@ -250,6 +250,16 @@ export async function createInteractionMemories(userId: string, userMessage: str
     });
   }
 
+  const nameMatch = userMessage.match(/(?:my name is|i am|i'm|call me)\s+([a-z][a-z\s'-]{1,40})/i);
+  if (nameMatch?.[1]) {
+    candidates.push({
+      type: "profile",
+      content: `User preferred name: ${sanitizeMemoryContent(nameMatch[1])}`,
+      tags: ["name", "profile"],
+      confidence: 85,
+    });
+  }
+
   if (/(confus|struggl|not sure|don't understand|hard for me)/i.test(combined)) {
     candidates.push({
       type: "lesson_issue",
