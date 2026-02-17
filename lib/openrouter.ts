@@ -71,7 +71,7 @@ export async function chatWithMya(messages: any[], userContext?: any, user?: Cha
   const response = await axios.post(
     "https://openrouter.ai/api/v1/chat/completions",
     {
-      model: OPENROUTER_MODEL,
+      model: aiSettings.model || OPENROUTER_MODEL,
       temperature: aiSettings.temperature,
       top_p: aiSettings.topP,
       messages: [systemPrompt, ...contextMessages],

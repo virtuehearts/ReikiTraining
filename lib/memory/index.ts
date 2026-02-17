@@ -289,19 +289,26 @@ export async function searchMemoryConsole(params: {
 }) {
   const lookup = params.userLookup?.trim();
   let userId: string | undefined;
+  let matchedUsers: Array<{ id: string; email: string | null; name: string | null }> = [];
 
   if (lookup) {
-    const matchedUser = await db.query.users.findFirst({
+    matchedUsers = await db.query.users.findMany({
       where: or(eq(users.id, lookup), like(users.email, `%${lookup}%`), like(users.name, `%${lookup}%`)),
-      columns: { id: true },
+      columns: { id: true, email: true, name: true },
+      limit: 20,
     });
-    userId = matchedUser?.id;
+    userId = matchedUsers[0]?.id;
   }
 
   const now = new Date();
   const queryParts = [];
 
-  if (userId) queryParts.push(eq(memoryItems.userId, userId));
+  if (lookup) {
+    if (!matchedUsers.length) {
+      return { userId: undefined, matchedUsers: [], memories: [], events: [] };
+    }
+    queryParts.push(inArray(memoryItems.userId, matchedUsers.map((user) => user.id)));
+  }
   if (params.contentQuery) queryParts.push(like(memoryItems.content, `%${params.contentQuery.trim()}%`));
   if (params.type) queryParts.push(eq(memoryItems.type, params.type));
   if (params.scope) queryParts.push(eq(memoryItems.scope, params.scope));
@@ -328,6 +335,7 @@ export async function searchMemoryConsole(params: {
 
   return {
     userId,
+    matchedUsers,
     memories: memories.map((memory) => ({ ...memory, tags: parseTags(memory.tags) })),
     events: events.map((event) => ({
       ...event,

@@ -489,7 +489,7 @@ export default function AdminPage() {
               <div className="space-y-6 max-w-5xl mx-auto">
                 <div className="bg-background-alt p-8 rounded-2xl border border-primary/20 shadow-xl space-y-6">
                   <h2 className="text-2xl font-serif text-accent border-b border-primary/10 pb-4">Mya AI Configuration</h2>
-                  <p className="text-sm text-foreground-muted">Configure OpenRouter context window, memory usage, and system prompt behavior. Model is locked to NVIDIA Nemotron 3 Nano 30B A3B (free) to keep costs low. End users never see memory internals.</p>
+                  <p className="text-sm text-foreground-muted">Configure OpenRouter context window, memory usage, and system prompt behavior. Memory retrieval runs through our own Drizzle/SQLite layer, so continuity stays intact even if the OpenRouter model changes. End users never see memory internals.</p>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
