@@ -79,7 +79,7 @@ export default function PendingPage() {
         </div>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => signOut({ callbackUrl: "/" })}
           className="mt-12 text-foreground-muted hover:text-accent transition-colors text-sm underline underline-offset-4"
         >
           Sign out and return later

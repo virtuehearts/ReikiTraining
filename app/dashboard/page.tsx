@@ -78,7 +78,7 @@ export default function DashboardPage() {
           <div className="text-right">
             <p className="text-sm font-medium">{session?.user?.name}</p>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: "/" })}
               className="text-xs text-foreground-muted hover:text-accent"
             >
               Sign Out

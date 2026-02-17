@@ -293,7 +293,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <a href="/admin/memory" className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-accent hover:bg-primary/10">Memory Console</a>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: "/" })}
               className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-foreground-muted hover:text-accent hover:bg-primary/10"
             >
               Sign Out
