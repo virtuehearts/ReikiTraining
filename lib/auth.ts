@@ -28,6 +28,12 @@ export const authorize = async (credentials: Record<"email" | "password", string
   const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   let user = existingUser;
 
+  const touchLastLogin = async (userId: string) => {
+    await db.update(users)
+      .set({ updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  };
+
   // Track if we've already checked the DB password to avoid redundant bcrypt.compare calls
   let dbPasswordChecked = false;
   let dbPasswordValid = false;
@@ -42,10 +48,12 @@ export const authorize = async (credentials: Record<"email" | "password", string
       // If it's the admin email, ensure role is correct
       if (isAdmin && (user.role !== "ADMIN" || user.status !== "APPROVED")) {
         const [updatedUser] = await db.update(users)
-          .set({ role: "ADMIN", status: "APPROVED" })
+          .set({ role: "ADMIN", status: "APPROVED", updatedAt: new Date() })
           .where(eq(users.id, user.id))
           .returning();
         user = updatedUser;
+      } else {
+        await touchLastLogin(user.id);
       }
       return user as any;
     }
@@ -70,6 +78,7 @@ export const authorize = async (credentials: Record<"email" | "password", string
           password: await bcrypt.hash(adminPasswordEnv, 10),
           role: "ADMIN",
           status: "APPROVED",
+          updatedAt: new Date(),
         })
         .where(eq(users.id, user.id))
         .returning();
@@ -107,6 +116,8 @@ export const authorize = async (credentials: Record<"email" | "password", string
     throw new Error("Invalid password");
   }
 
+  await touchLastLogin(user.id);
+
   return user as any;
 };
 
@@ -140,7 +151,16 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             status: isAdmin ? "APPROVED" : "PENDING",
             role: isAdmin ? "ADMIN" : "USER",
+            updatedAt: new Date(),
           });
+        } else {
+          await db.update(users)
+            .set({
+              name: user.name,
+              image: user.image,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, existingUser.id));
         }
       }
       return true;

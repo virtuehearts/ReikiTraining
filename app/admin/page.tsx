@@ -17,6 +17,7 @@ import {
   CalendarClock,
   Ban,
   Sparkles,
+  Eye,
 } from "lucide-react";
 
 interface User {
@@ -27,6 +28,7 @@ interface User {
   role: string;
   image?: string | null;
   createdAt: string;
+  updatedAt: string;
   todayRequestCount?: number;
   heavyUser?: boolean;
   intake: {
@@ -358,6 +360,7 @@ export default function AdminPage() {
                       <th className="p-4 text-accent font-semibold">Email</th>
                       <th className="p-4 text-accent font-semibold">Status</th>
                       <th className="p-4 text-accent font-semibold">Registered</th>
+                      <th className="p-4 text-accent font-semibold">Last Login</th>
                       <th className="p-4 text-accent font-semibold">Usage</th>
                       <th className="p-4 text-accent font-semibold">Actions</th>
                     </tr>
@@ -383,6 +386,7 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="p-4 text-sm text-foreground-muted">{formatDate(user.createdAt)}</td>
+                        <td className="p-4 text-sm text-foreground-muted">{formatDate(user.updatedAt)}</td>
                         <td className="p-4">
                           <div className="flex flex-col gap-1">
                             <span className="text-xs text-foreground-muted">{user.todayRequestCount || 0} requests today</span>
@@ -408,6 +412,15 @@ export default function AdminPage() {
                               <XCircle size={18} />
                             </button>
                           )}
+                          <a
+                            href={`/admin/users/${user.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex bg-accent hover:bg-accent-light text-white p-2 rounded-lg transition-colors"
+                            title="Open detailed profile"
+                          >
+                            <Eye size={18} />
+                          </a>
                         </td>
                       </tr>
                     ))}
